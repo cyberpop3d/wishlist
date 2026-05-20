@@ -132,61 +132,56 @@ textarea { min-height: 118px; width: 100%; resize: vertical; border: 1px solid r
 
 
 .developmentPanel {
-  margin-top: 18px;
-  border: 1px solid rgba(255,255,255,.1);
-  border-radius: 28px;
-  padding: 18px;
-  background: rgba(255,255,255,.045);
+  width: min(100%, 360px);
+  margin: 18px auto 0 0;
+  border: 1px solid rgba(255,255,255,.09);
+  border-radius: 18px;
+  padding: 12px 14px;
+  background: rgba(255,255,255,.032);
+  box-shadow: 0 14px 36px rgba(0,0,0,.18);
+  opacity: .82;
 }
-.sectionHeader {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 14px;
-}
-.sectionHeader span {
+.developmentEyebrow {
+  margin-bottom: 8px;
+  color: #a1a1aa;
+  font-size: 10px;
   font-weight: 950;
   text-transform: uppercase;
-  letter-spacing: .08em;
-}
-.sectionHeader small {
-  color: #a1a1aa;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: .08em;
+  letter-spacing: .18em;
 }
 .developmentList {
   display: grid;
-  gap: 10px;
+  gap: 7px;
 }
 .developmentItem {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  border-radius: 22px;
-  border: 1px solid rgba(255,255,255,.08);
-  padding: 18px;
+  justify-content: flex-start;
+  gap: 8px;
+  border-radius: 13px;
+  border: 1px solid rgba(255,255,255,.065);
+  padding: 10px 12px;
   background: rgba(0,0,0,.18);
 }
 .developmentItem strong {
-  font-size: clamp(24px, 4vw, 44px);
-  line-height: .9;
-  letter-spacing: -.04em;
+  font-size: 14px;
+  line-height: 1;
+  letter-spacing: .06em;
   text-transform: uppercase;
 }
-.developmentItem b {
-  white-space: nowrap;
-  border-radius: 999px;
-  padding: 9px 13px;
-  background: #fff;
-  color: #050505;
-  font-size: 13px;
+.developmentItem strong span {
+  color: #71717a;
+  margin: 0 3px;
+}
+.developmentAuthor {
+  margin-top: 8px;
+  color: #71717a;
+  font-size: 9px;
+  font-weight: 950;
   text-transform: uppercase;
-  letter-spacing: .08em;
+  letter-spacing: .18em;
 }
 
 @media (max-width: 560px) {
-  .sectionHeader, .developmentItem { align-items: flex-start; flex-direction: column; }
+  .developmentPanel { width: 100%; }
 }

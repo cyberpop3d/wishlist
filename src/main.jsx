@@ -245,19 +245,16 @@ function ModelsInDevelopment() {
   }, []);
 
   return (
-    <section className="developmentPanel">
-      <div className="sectionHeader">
-        <span>Models in development</span>
-        <small>Updated by Kiaro Studio</small>
-      </div>
+    <section className="developmentPanel" aria-label="Models in development">
+      <div className="developmentEyebrow">Models in development</div>
       <div className="developmentList">
         {models.map((model, index) => (
           <div className="developmentItem" key={`${model.model_name}-${index}`}>
-            <strong>{model.model_name}</strong>
-            <b>{model.status}</b>
+            <strong>{model.model_name} <span>—</span> {model.status}</strong>
           </div>
         ))}
       </div>
+      <div className="developmentAuthor">CYBERPOP3D</div>
     </section>
   );
 }
