@@ -1,10 +1,6 @@
 {
-  "name": "patreon-wishlist-vote",
-  "private": true,
-  "version": "1.0.0",
-  "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "vite --host 0.0.0.0",
     "build": "vite build",
     "preview": "vite preview"
   },
@@ -13,9 +9,9 @@
     "vite": "latest",
     "react": "latest",
     "react-dom": "latest",
+    "@supabase/supabase-js": "latest",
     "framer-motion": "latest",
-    "lucide-react": "latest",
-    "@supabase/supabase-js": "latest"
+    "lucide-react": "latest"
   },
   "devDependencies": {}
 }
