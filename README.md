@@ -1,26 +1,11 @@
-# Patreon Wishlist Vote
+# Patreon Live Wishlist Vote
 
-A small React/Vite voting app for collecting wishlist votes.
+A small Vite/React app for wishlist voting and live result display.
 
-## Links
+Pages:
+- Vote page: `/`
+- Live results page: `/?results=1`
+- Wix/embed-friendly live results page: `/?results=1&embed=1`
+- Debug mode: add `&debug=1`
 
-Vote page:
-`https://your-vercel-domain.vercel.app/`
-
-Live results page:
-`https://your-vercel-domain.vercel.app/?results=1`
-
-Debug page:
-`https://your-vercel-domain.vercel.app/?debug=1`
-
-## Current behavior
-
-- Visitors can submit up to 3 votes.
-- The same character can receive multiple votes.
-- After a successful submit, the vote is locked in that browser using localStorage.
-- Reset is removed.
-- Live results are shown on `?results=1`.
-
-## Important
-
-This browser lock prevents casual repeat voting, but it is not a true identity lock. A user can bypass it by clearing browser data, using another device, or using another browser. For a true hard lock, add email login, Patreon OAuth, or unique invite tokens.
+Before publishing, run `sql/final-policy.sql` in Supabase SQL Editor to ensure the insert policy and results view are correct.
