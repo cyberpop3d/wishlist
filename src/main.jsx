@@ -30,6 +30,7 @@ const STORAGE_KEY = "patreon-wishlist-vote-v1";
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 const supabase = supabaseUrl && supabaseAnonKey ? createClient(supabaseUrl, supabaseAnonKey) : null;
+const debugMode = new URLSearchParams(window.location.search).get("debug") === "1";
 
 function VoteHearts({ count, compact = false }) {
   return (
@@ -109,14 +110,18 @@ function App() {
     };
 
     try {
-      if (supabase) {
-        const { error: insertError } = await supabase.from("wishlist_votes").insert(payload);
-        if (insertError) throw insertError;
+      if (!supabase) {
+        throw new Error("Supabase is not connected. Check VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in Vercel, then redeploy.");
       }
+
+      const { error: insertError } = await supabase.from("wishlist_votes").insert(payload);
+      if (insertError) throw insertError;
+
       setSubmitted(true);
     } catch (err) {
-      setError("Vote could not be saved. Please try again.");
-      console.error(err);
+      const message = err?.message || "Unknown error";
+      setError(`Vote could not be saved: ${message}`);
+      console.error("Wishlist vote save error:", err, payload);
     } finally {
       setSubmitting(false);
     }
@@ -209,6 +214,15 @@ function App() {
             <button type="button" onClick={resetVote} className="button secondary"><RotateCcw size={18} /> Reset</button>
           </div>
         </div>
+
+        {debugMode && (
+          <div className="message debug">
+            <p>Debug mode</p>
+            <span>Supabase URL: {supabaseUrl ? "found" : "missing"}</span>
+            <span>Anon key: {supabaseAnonKey ? "found" : "missing"}</span>
+            <span>Client: {supabase ? "connected" : "not connected"}</span>
+          </div>
+        )}
 
         {error && <div className="message error">{error}</div>}
 

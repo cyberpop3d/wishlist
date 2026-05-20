@@ -1,34 +1,20 @@
-# Patreon Wishlist Vote
+# Patreon Wishlist Vote - Connected Fix
 
-A small React/Vite voting app for Patreon/Wix.
+This version does not silently save if Supabase is missing.
 
-## Supabase table SQL
+## Test
 
-Run this in Supabase SQL Editor when you want to collect real votes:
+Open your Vercel URL with `?debug=1` at the end.
 
-```sql
-create table if not exists wishlist_votes (
-  id uuid primary key default gen_random_uuid(),
-  selected_ids text[] not null,
-  selected_titles text[] not null,
-  note text,
-  created_at timestamptz default now()
-);
+You should see:
 
-alter table wishlist_votes enable row level security;
+- Supabase URL: found
+- Anon key: found
+- Client: connected
 
-create policy "Allow public vote inserts"
-on wishlist_votes
-for insert
-to anon
-with check (true);
-```
+Then vote and check Supabase > Table Editor > wishlist_votes.
 
-## Vercel environment variables
+## Required Vercel env variables
 
-Add these in Vercel Project Settings > Environment Variables:
-
-- VITE_SUPABASE_URL
-- VITE_SUPABASE_ANON_KEY
-
-Without these variables, the app still works visually but votes are not saved to Supabase.
+VITE_SUPABASE_URL
+VITE_SUPABASE_ANON_KEY
