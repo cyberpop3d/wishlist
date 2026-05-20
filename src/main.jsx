@@ -215,6 +215,53 @@ function VotePage() {
   );
 }
 
+
+function ModelsInDevelopment() {
+  const [models, setModels] = useState([
+    { model_name: 'SAGAT', status: 'CORPORATE', display_order: 1 },
+  ]);
+
+  useEffect(() => {
+    let ignore = false;
+
+    async function loadModels() {
+      const { data, error: fetchError } = await supabase
+        .from('models_in_development')
+        .select('model_name, status, display_order')
+        .eq('is_visible', true)
+        .order('display_order', { ascending: true });
+
+      if (!ignore && !fetchError && Array.isArray(data) && data.length > 0) {
+        setModels(data);
+      }
+    }
+
+    loadModels();
+    const interval = window.setInterval(loadModels, 30000);
+    return () => {
+      ignore = true;
+      window.clearInterval(interval);
+    };
+  }, []);
+
+  return (
+    <section className="developmentPanel">
+      <div className="sectionHeader">
+        <span>Models in development</span>
+        <small>Updated by Kiaro Studio</small>
+      </div>
+      <div className="developmentList">
+        {models.map((model, index) => (
+          <div className="developmentItem" key={`${model.model_name}-${index}`}>
+            <strong>{model.model_name}</strong>
+            <b>{model.status}</b>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 function ResultsPage() {
   const [rows, setRows] = useState(makeEmptyResults());
   const [status, setStatus] = useState('loading');
@@ -293,6 +340,8 @@ function ResultsPage() {
           ))}
         </aside>
       </section>
+
+      <ModelsInDevelopment />
 
       <DebugPanel error={error} />
     </Shell>

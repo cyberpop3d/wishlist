@@ -129,3 +129,64 @@ textarea { min-height: 118px; width: 100%; resize: vertical; border: 1px solid r
   p { font-size: 17px; }
   .leaderCard h2 { font-size: 52px; }
 }
+
+
+.developmentPanel {
+  margin-top: 18px;
+  border: 1px solid rgba(255,255,255,.1);
+  border-radius: 28px;
+  padding: 18px;
+  background: rgba(255,255,255,.045);
+}
+.sectionHeader {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+.sectionHeader span {
+  font-weight: 950;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+}
+.sectionHeader small {
+  color: #a1a1aa;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+}
+.developmentList {
+  display: grid;
+  gap: 10px;
+}
+.developmentItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border-radius: 22px;
+  border: 1px solid rgba(255,255,255,.08);
+  padding: 18px;
+  background: rgba(0,0,0,.18);
+}
+.developmentItem strong {
+  font-size: clamp(24px, 4vw, 44px);
+  line-height: .9;
+  letter-spacing: -.04em;
+  text-transform: uppercase;
+}
+.developmentItem b {
+  white-space: nowrap;
+  border-radius: 999px;
+  padding: 9px 13px;
+  background: #fff;
+  color: #050505;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+}
+
+@media (max-width: 560px) {
+  .sectionHeader, .developmentItem { align-items: flex-start; flex-direction: column; }
+}
