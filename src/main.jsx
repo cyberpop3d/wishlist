@@ -246,7 +246,7 @@ function ResultsPage() {
           <h1>{leader?.votes > 0 ? `${leader.title} IS LEADING` : 'CURRENT LEADING CHARACTER'}</h1>
           <p>Live results are calculated from submitted wishlist votes. Updates refresh automatically.</p>
         </div>
-        {!isEmbed ? <a className="voteLink" href="/">VOTE NOW</a> : null}
+        <a className="voteLink" href="/" target={isEmbed ? '_blank' : undefined} rel={isEmbed ? 'noreferrer' : undefined}>VOTE NOW</a>
       </section>
 
       {status === 'error' ? (
