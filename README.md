@@ -1,14 +1,13 @@
-# Patreon Live Wishlist Vote
+# Patreon Live Vote - Branded Wix Links
 
-A small Vite/React app for wishlist voting and live result display.
+Use this Vercel app inside Wix embeds so public visitors stay on kiarostudio.com links.
 
-Pages:
-- Vote page: `/`
-- Live results page: `/?results=1`
-- Wix/embed-friendly live results page: `/?results=1&embed=1`
-- Debug mode: add `&debug=1`
+Recommended Wix setup:
 
-Before publishing, run `sql/final-policy.sql` in Supabase SQL Editor to ensure the insert policy and results view are correct.
+Live results page embed URL:
+https://wishlist-nu-wheat.vercel.app?results=1&embed=1&voteUrl=https%3A%2F%2Fwww.kiarostudio.com%2Fvote
 
+Vote page embed URL:
+https://wishlist-nu-wheat.vercel.app?embed=1&resultsUrl=https%3A%2F%2Fwww.kiarostudio.com%2Flive-vote
 
-Update: The embedded results page now includes a matching VOTE NOW button inside the Vercel UI, so Wix does not need a separate button.
+If your Wix URLs are different, update the encoded voteUrl/resultsUrl values.

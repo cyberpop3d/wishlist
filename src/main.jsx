@@ -33,6 +33,9 @@ const params = new URLSearchParams(window.location.search);
 const isResultsPage = params.get('results') === '1' || window.location.pathname.includes('results');
 const isEmbed = params.get('embed') === '1';
 const isDebug = params.get('debug') === '1';
+const voteUrl = params.get('voteUrl') || '/';
+const resultsUrl = params.get('resultsUrl') || '?results=1';
+const externalTarget = isEmbed ? '_top' : undefined;
 
 function optionById(id) {
   return OPTIONS.find((option) => option.id === id);
@@ -154,7 +157,7 @@ function VotePage() {
         <section className="notice success">
           <strong>Your vote has been saved.</strong>
           <span>Thanks for helping shape the next release. This browser is now locked for voting.</span>
-          <a href="?results=1">View live results</a>
+          <a href={resultsUrl} target={externalTarget}>View live results</a>
         </section>
       ) : null}
 
@@ -246,7 +249,7 @@ function ResultsPage() {
           <h1>{leader?.votes > 0 ? `${leader.title} IS LEADING` : 'CURRENT LEADING CHARACTER'}</h1>
           <p>Live results are calculated from submitted wishlist votes. Updates refresh automatically.</p>
         </div>
-        <a className="voteLink" href="/" target={isEmbed ? '_blank' : undefined} rel={isEmbed ? 'noreferrer' : undefined}>VOTE NOW</a>
+        <a className="voteLink" href={voteUrl} target={externalTarget}>VOTE NOW</a>
       </section>
 
       {status === 'error' ? (
