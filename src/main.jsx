@@ -27,8 +27,8 @@ const OPTIONS = [
 const MAX_VOTES = 3;
 const STORAGE_KEY = "patreon-wishlist-vote-v1";
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+const supabaseUrl = "https://sjqeisfrybspwogmxvdl.supabase.co";
+const supabaseAnonKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNqcWVpc2ZyeWJzcHdvZ214dmRsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkyNzQ1NjAsImV4cCI6MjA5NDg1MDU2MH0.Pcc75eTPth-zUaqiIh-owCOlq2VVSNdKdhB1ubYEEDg";
 const supabase = supabaseUrl && supabaseAnonKey ? createClient(supabaseUrl, supabaseAnonKey) : null;
 const debugMode = new URLSearchParams(window.location.search).get("debug") === "1";
 
@@ -111,7 +111,7 @@ function App() {
 
     try {
       if (!supabase) {
-        throw new Error("Supabase is not connected. Check VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in Vercel, then redeploy.");
+        throw new Error("Supabase is not connected. Please check the Supabase URL/key in the source code.");
       }
 
       const { error: insertError } = await supabase.from("wishlist_votes").insert(payload);

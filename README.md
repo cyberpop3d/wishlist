@@ -1,20 +1,5 @@
-# Patreon Wishlist Vote - Connected Fix
+# Patreon Wishlist Vote - Hardcoded Supabase Fix
 
-This version does not silently save if Supabase is missing.
+This version contains the Supabase public URL and anon key directly in `src/main.jsx`, so it does not need Vercel Environment Variables.
 
-## Test
-
-Open your Vercel URL with `?debug=1` at the end.
-
-You should see:
-
-- Supabase URL: found
-- Anon key: found
-- Client: connected
-
-Then vote and check Supabase > Table Editor > wishlist_votes.
-
-## Required Vercel env variables
-
-VITE_SUPABASE_URL
-VITE_SUPABASE_ANON_KEY
+Upload these files to GitHub and let Vercel redeploy. Then test with `?debug=1`.
