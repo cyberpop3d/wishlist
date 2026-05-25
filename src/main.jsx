@@ -216,10 +216,54 @@ function VotePage() {
 }
 
 
+const DEFAULT_MODEL_SECTIONS = [
+  {
+    id: 'on-development',
+    title: 'On development',
+    items: [
+      { model_name: 'LIU KANG', status: '', display_order: 1 },
+      { model_name: 'SUB ZERO', status: '', display_order: 2 },
+    ],
+  },
+  {
+    id: 'recently-released',
+    title: 'Recently released',
+    items: [
+      { model_name: 'SONYA BLADE', status: '', display_order: 1 },
+      { model_name: 'JOHNNY CAGE', status: '', display_order: 2 },
+      { model_name: 'CAMMY', status: 'SF6', display_order: 3 },
+      { model_name: 'SAGAT', status: 'CORPORATE', display_order: 4 },
+    ],
+  },
+];
+
+function normalizeSectionId(section) {
+  const value = String(section || '').trim().toLowerCase().replace(/_/g, '-');
+  if (value === 'released' || value === 'recently-released') return 'recently-released';
+  return 'on-development';
+}
+
+function formatModelName(model) {
+  return [model.model_name, model.status].filter(Boolean).join(' ');
+}
+
+function groupModelSections(models) {
+  const grouped = DEFAULT_MODEL_SECTIONS.map((section) => ({ ...section, items: [] }));
+
+  models.forEach((model) => {
+    const sectionId = normalizeSectionId(model.section);
+    const target = grouped.find((section) => section.id === sectionId) || grouped[0];
+    target.items.push(model);
+  });
+
+  return grouped.map((section) => ({
+    ...section,
+    items: section.items.sort((a, b) => (a.display_order || 0) - (b.display_order || 0)),
+  }));
+}
+
 function ModelsInDevelopment() {
-  const [models, setModels] = useState([
-    { model_name: 'SAGAT', status: 'CORPORATE', display_order: 1 },
-  ]);
+  const [sections, setSections] = useState(DEFAULT_MODEL_SECTIONS);
 
   useEffect(() => {
     let ignore = false;
@@ -227,12 +271,13 @@ function ModelsInDevelopment() {
     async function loadModels() {
       const { data, error: fetchError } = await supabase
         .from('models_in_development')
-        .select('model_name, status, display_order')
+        .select('section, model_name, status, display_order')
         .eq('is_visible', true)
+        .order('section', { ascending: true })
         .order('display_order', { ascending: true });
 
       if (!ignore && !fetchError && Array.isArray(data) && data.length > 0) {
-        setModels(data);
+        setSections(groupModelSections(data));
       }
     }
 
@@ -245,12 +290,19 @@ function ModelsInDevelopment() {
   }, []);
 
   return (
-    <section className="developmentPanel" aria-label="Models in development">
-      <div className="developmentEyebrow">Models in development</div>
-      <div className="developmentList">
-        {models.map((model, index) => (
-          <div className="developmentItem" key={`${model.model_name}-${index}`}>
-            <strong>{model.model_name} <span>—</span> {model.status}</strong>
+    <section className="developmentPanel" aria-label="Model status">
+      <div className="developmentEyebrow">Model status</div>
+      <div className="developmentSections">
+        {sections.map((section) => (
+          <div className="developmentSection" key={section.id}>
+            <div className="developmentSectionTitle">{section.title}</div>
+            <div className="developmentList">
+              {section.items.map((model, index) => (
+                <div className="developmentItem" key={`${section.id}-${model.model_name}-${index}`}>
+                  <strong>{formatModelName(model)}</strong>
+                </div>
+              ))}
+            </div>
           </div>
         ))}
       </div>
