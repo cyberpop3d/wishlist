@@ -9,26 +9,24 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 const OPTIONS = [
-  { id: 'dante', title: 'DANTE', subtitle: 'DEVIL MAY CRY', category: 'NOSTALGIA GAME' },
-  { id: 'vergil', title: 'VERGIL', subtitle: 'DEVIL MAY CRY', category: 'NOSTALGIA GAME' },
-  { id: 'solid-snake', title: 'SOLID SNAKE', subtitle: 'METAL GEAR SOLID', category: 'PLAYSTATION CORE' },
-  { id: 'raiden', title: 'RAIDEN', subtitle: 'METAL GEAR SOLID', category: 'PLAYSTATION CORE' },
-  { id: 'scorpion', title: 'SCORPION', subtitle: 'MORTAL KOMBAT', category: 'ARCADE / FIGHTING' },
-  { id: 'sub-zero', title: 'SUB-ZERO', subtitle: 'MORTAL KOMBAT', category: 'ARCADE / FIGHTING' },
-  { id: 'cloud-strife', title: 'CLOUD STRIFE', subtitle: 'FINAL FANTASY VII', category: 'JRPG ICON' },
-  { id: 'sephiroth', title: 'SEPHIROTH', subtitle: 'FINAL FANTASY VII', category: 'JRPG ICON' },
-  { id: 'leon', title: 'LEON S. KENNEDY', subtitle: 'RESIDENT EVIL 4', category: 'SURVIVAL HORROR' },
-  { id: 'pyramid-head', title: 'PYRAMID HEAD', subtitle: 'SILENT HILL 2', category: 'SURVIVAL HORROR' },
-  { id: 'kratos', title: 'KRATOS', subtitle: 'GOD OF WAR', category: 'PLAYSTATION CORE' },
-  { id: 'tifa', title: 'TIFA LOCKHART', subtitle: 'FINAL FANTASY VII', category: 'JRPG ICON' },
-  { id: 'frieren', title: 'FRIEREN', subtitle: 'BEYOND JOURNEY’S END', category: 'CURRENT ANIME' },
-  { id: 'fern', title: 'FERN', subtitle: 'BEYOND JOURNEY’S END', category: 'CURRENT ANIME' },
-  { id: 'gojo', title: 'GOJO SATORU', subtitle: 'JUJUTSU KAISEN', category: 'POPULAR ANIME' },
-  { id: 'denji', title: 'DENJI', subtitle: 'CHAINSAW MAN', category: 'POPULAR ANIME' },
+  { id: 'summer-2026-zangief-beach', title: 'ZANGIEF BEACH COSTUME', subtitle: 'STREET FIGHTER', category: 'SUMMER FIGHTERS' },
+  { id: 'summer-2026-guile-beach', title: 'GUILE BEACH COSTUME', subtitle: 'STREET FIGHTER', category: 'SUMMER FIGHTERS' },
+  { id: 'summer-2026-sakura-beach', title: 'SAKURA BEACH COSTUME', subtitle: 'STREET FIGHTER', category: 'SUMMER FIGHTERS' },
+  { id: 'summer-2026-kratos', title: 'KRATOS', subtitle: 'GOD OF WAR', category: 'PLAYSTATION CORE' },
+  { id: 'summer-2026-sonic-woody', title: 'SONIC WOODY', subtitle: 'SEGA X TOY STORY', category: 'CROSSOVER TOYBOX' },
+  { id: 'summer-2026-sheriff-amy', title: 'SHERIFF AMY', subtitle: 'SEGA X TOY STORY', category: 'CROSSOVER TOYBOX' },
+  { id: 'summer-2026-tails-lightyear-vs', title: 'TAILS LIGHTYEAR VS EGGMAN ZURG', subtitle: 'SEGA X TOY STORY', category: 'CROSSOVER TOYBOX' },
+  { id: 'summer-2026-raiden-shogun', title: 'RAIDEN SHOGUN', subtitle: 'GENSHIN IMPACT', category: 'GENSHIN IMPACT' },
+  { id: 'summer-2026-furina', title: 'FURINA', subtitle: 'GENSHIN IMPACT', category: 'GENSHIN IMPACT' },
+  { id: 'summer-2026-arlecchino', title: 'ARLECCHINO', subtitle: 'GENSHIN IMPACT', category: 'GENSHIN IMPACT' },
+  { id: 'summer-2026-iori-yagami', title: 'IORI YAGAMI', subtitle: 'THE KING OF FIGHTERS', category: 'KING OF FIGHTERS' },
+  { id: 'summer-2026-mai-shiranui', title: 'MAI SHIRANUI', subtitle: 'THE KING OF FIGHTERS', category: 'KING OF FIGHTERS' },
+  { id: 'summer-2026-kyo-kusanagi', title: 'KYO KUSANAGI', subtitle: 'THE KING OF FIGHTERS', category: 'KING OF FIGHTERS' },
+  { id: 'summer-2026-scorpion', title: 'SCORPION', subtitle: 'MORTAL KOMBAT', category: 'ARCADE / FIGHTING' },
 ];
 
 const MAX_VOTES = 3;
-const LOCK_KEY = 'cyberpop_wishlist_vote_lock_v1';
+const LOCK_KEY = 'cyberpop_wishlist_vote_lock_summer_2026_v1';
 const params = new URLSearchParams(window.location.search);
 const isResultsPage = params.get('results') === '1' || window.location.pathname.includes('results');
 const isEmbed = params.get('embed') === '1';
@@ -221,73 +219,27 @@ const DEFAULT_MODEL_SECTIONS = [
     id: 'on-development',
     title: 'On development',
     items: [
-      { model_name: 'LIU KANG', status: '', display_order: 1 },
-      { model_name: 'SUB ZERO', status: '', display_order: 2 },
+      { model_name: 'ZANGIEF', status: 'BEACH COSTUME', display_order: 1 },
+      { model_name: 'GUILE', status: 'BEACH COSTUME', display_order: 2 },
     ],
   },
   {
     id: 'recently-released',
     title: 'Recently released',
     items: [
-      { model_name: 'SONYA BLADE', status: '', display_order: 1 },
-      { model_name: 'JOHNNY CAGE', status: '', display_order: 2 },
-      { model_name: 'CAMMY', status: 'SF6', display_order: 3 },
-      { model_name: 'SAGAT', status: 'CORPORATE', display_order: 4 },
+      { model_name: 'SUBZERO', status: '', display_order: 1 },
+      { model_name: 'VEGA', status: '', display_order: 2 },
+      { model_name: 'TOM&JERRY', status: 'BEACH EDITION', display_order: 3 },
     ],
   },
 ];
-
-function normalizeSectionId(section) {
-  const value = String(section || '').trim().toLowerCase().replace(/_/g, '-');
-  if (value === 'released' || value === 'recently-released') return 'recently-released';
-  return 'on-development';
-}
 
 function formatModelName(model) {
   return [model.model_name, model.status].filter(Boolean).join(' ');
 }
 
-function groupModelSections(models) {
-  const grouped = DEFAULT_MODEL_SECTIONS.map((section) => ({ ...section, items: [] }));
-
-  models.forEach((model) => {
-    const sectionId = normalizeSectionId(model.section);
-    const target = grouped.find((section) => section.id === sectionId) || grouped[0];
-    target.items.push(model);
-  });
-
-  return grouped.map((section) => ({
-    ...section,
-    items: section.items.sort((a, b) => (a.display_order || 0) - (b.display_order || 0)),
-  }));
-}
-
 function ModelsInDevelopment() {
-  const [sections, setSections] = useState(DEFAULT_MODEL_SECTIONS);
-
-  useEffect(() => {
-    let ignore = false;
-
-    async function loadModels() {
-      const { data, error: fetchError } = await supabase
-        .from('models_in_development')
-        .select('section, model_name, status, display_order')
-        .eq('is_visible', true)
-        .order('section', { ascending: true })
-        .order('display_order', { ascending: true });
-
-      if (!ignore && !fetchError && Array.isArray(data) && data.length > 0) {
-        setSections(groupModelSections(data));
-      }
-    }
-
-    loadModels();
-    const interval = window.setInterval(loadModels, 30000);
-    return () => {
-      ignore = true;
-      window.clearInterval(interval);
-    };
-  }, []);
+  const sections = DEFAULT_MODEL_SECTIONS;
 
   return (
     <section className="developmentPanel" aria-label="Model status">
