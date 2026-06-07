@@ -27,14 +27,34 @@ const OPTIONS = [
 
 const MAX_VOTES = 3;
 const LOCK_KEY = 'cyberpop_wishlist_vote_lock_summer_2026_v1';
-const SITE_LIVE_URL = 'https://kiarostudio.com/live';
 const params = new URLSearchParams(window.location.search);
 const isResultsPage = params.get('results') === '1' || window.location.pathname.includes('results');
 const isEmbed = params.get('embed') === '1';
 const isDebug = params.get('debug') === '1';
-const voteUrl = params.get('voteUrl') || SITE_LIVE_URL;
-const resultsUrl = params.get('resultsUrl') || `${SITE_LIVE_URL}?results=1`;
-const externalTarget = isEmbed ? '_top' : undefined;
+
+function makeModeUrl(resultsMode) {
+  const nextParams = new URLSearchParams(window.location.search);
+  nextParams.delete('voteUrl');
+  nextParams.delete('resultsUrl');
+  if (resultsMode) nextParams.set('results', '1');
+  else nextParams.delete('results');
+
+  const search = nextParams.toString();
+  return `${window.location.pathname}${search ? `?${search}` : ''}${window.location.hash}`;
+}
+
+const voteUrl = makeModeUrl(false);
+const resultsUrl = makeModeUrl(true);
+
+function goToResults(event) {
+  event.preventDefault();
+  window.location.assign(resultsUrl);
+}
+
+function goToVote(event) {
+  event.preventDefault();
+  window.location.assign(voteUrl);
+}
 
 function optionById(id) {
   return OPTIONS.find((option) => option.id === id);
@@ -156,7 +176,7 @@ function VotePage() {
         <section className="notice success">
           <strong>Your vote has been saved.</strong>
           <span>Thanks for helping shape the next release. This browser is now locked for voting.</span>
-          <a href={resultsUrl} target={externalTarget}>View live results</a>
+          <a href={resultsUrl} onClick={goToResults}>View live results</a>
         </section>
       ) : null}
 
@@ -298,7 +318,7 @@ function ResultsPage() {
           <h1>{leader?.votes > 0 ? `${leader.title} IS LEADING` : 'CURRENT LEADING CHARACTER'}</h1>
           <p>Live results are calculated from submitted wishlist votes. Updates refresh automatically.</p>
         </div>
-        <a className="voteLink" href={voteUrl} target={externalTarget}>VOTE NOW</a>
+        <a className="voteLink" href={voteUrl} onClick={goToVote}>VOTE NOW</a>
       </section>
 
       {status === 'error' ? (
