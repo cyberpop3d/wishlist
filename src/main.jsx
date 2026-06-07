@@ -27,12 +27,13 @@ const OPTIONS = [
 
 const MAX_VOTES = 3;
 const LOCK_KEY = 'cyberpop_wishlist_vote_lock_summer_2026_v1';
+const SITE_LIVE_URL = 'https://kiarostudio.com/live';
 const params = new URLSearchParams(window.location.search);
 const isResultsPage = params.get('results') === '1' || window.location.pathname.includes('results');
 const isEmbed = params.get('embed') === '1';
 const isDebug = params.get('debug') === '1';
-const voteUrl = params.get('voteUrl') || '/';
-const resultsUrl = params.get('resultsUrl') || '?results=1';
+const voteUrl = params.get('voteUrl') || SITE_LIVE_URL;
+const resultsUrl = params.get('resultsUrl') || `${SITE_LIVE_URL}?results=1`;
 const externalTarget = isEmbed ? '_top' : undefined;
 
 function optionById(id) {
