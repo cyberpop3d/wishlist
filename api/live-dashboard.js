@@ -2,25 +2,17 @@ const SUPABASE_URL = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL |
 const SUPABASE_KEY = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || '';
 const SETTINGS_KEY = 'wishlist_dashboard';
 
-function json(statusCode, body) {
-  return new Response(JSON.stringify(body), {
-    status: statusCode,
-    headers: {
-      'content-type': 'application/json; charset=utf-8',
-      'access-control-allow-origin': '*',
-      'access-control-allow-methods': 'GET,POST,OPTIONS',
-      'access-control-allow-headers': 'content-type,authorization,apikey',
-      'cache-control': 'no-store',
-    },
-  });
+function setCors(res) {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, apikey');
+  res.setHeader('Cache-Control', 'no-store');
 }
 
-async function readJson(request) {
-  try {
-    return await request.json();
-  } catch {
-    return null;
-  }
+function sendJson(res, statusCode, body) {
+  setCors(res);
+  res.setHeader('Content-Type', 'application/json; charset=utf-8');
+  res.status(statusCode).send(JSON.stringify(body));
 }
 
 async function supabaseRest(path, init = {}) {
@@ -67,18 +59,22 @@ function normalizeConfig(value = {}) {
   };
 }
 
-export default async function handler(request) {
-  if (request.method === 'OPTIONS') return json(200, { ok: true });
+export default async function handler(req, res) {
+  setCors(res);
+
+  if (req.method === 'OPTIONS') {
+    return res.status(204).end();
+  }
 
   try {
-    if (request.method === 'GET') {
+    if (req.method === 'GET') {
       const [settingsRows, voteRows] = await Promise.all([
         supabaseRest(`portfolio_settings?key=eq.${encodeURIComponent(SETTINGS_KEY)}&select=value`),
         supabaseRest('wishlist_vote_counts?select=option_id,votes'),
       ]);
 
       const config = normalizeConfig(settingsRows?.[0]?.value);
-      return json(200, {
+      return sendJson(res, 200, {
         ok: true,
         settingsKey: SETTINGS_KEY,
         config,
@@ -86,10 +82,9 @@ export default async function handler(request) {
       });
     }
 
-    if (request.method === 'POST') {
-      const body = await readJson(request);
-      const config = normalizeConfig(body?.config || body || {});
-      await supabaseRest(`portfolio_settings?on_conflict=key`, {
+    if (req.method === 'POST') {
+      const config = normalizeConfig(req.body?.config || req.body || {});
+      await supabaseRest('portfolio_settings?on_conflict=key', {
         method: 'POST',
         headers: {
           Prefer: 'resolution=merge-duplicates,return=representation',
@@ -97,11 +92,11 @@ export default async function handler(request) {
         body: JSON.stringify([{ key: SETTINGS_KEY, value: config }]),
       });
 
-      return json(200, { ok: true, settingsKey: SETTINGS_KEY, config });
+      return sendJson(res, 200, { ok: true, settingsKey: SETTINGS_KEY, config });
     }
 
-    return json(405, { ok: false, error: 'Method not allowed' });
+    return sendJson(res, 405, { ok: false, error: 'Method not allowed' });
   } catch (error) {
-    return json(500, { ok: false, error: error.message || 'Live dashboard API failed.' });
+    return sendJson(res, 500, { ok: false, error: error.message || 'Live dashboard API failed.' });
   }
 }
