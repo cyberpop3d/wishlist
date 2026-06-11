@@ -59,6 +59,16 @@ function normalizeConfig(value = {}) {
   };
 }
 
+function normalizeVoteRecord(row) {
+  return {
+    id: row.id,
+    created_at: row.created_at,
+    selected_ids: Array.isArray(row.selected_ids) ? row.selected_ids : [],
+    selected_titles: Array.isArray(row.selected_titles) ? row.selected_titles : [],
+    note: typeof row.note === 'string' ? row.note.trim() : '',
+  };
+}
+
 export default async function handler(req, res) {
   setCors(res);
 
@@ -68,17 +78,23 @@ export default async function handler(req, res) {
 
   try {
     if (req.method === 'GET') {
-      const [settingsRows, voteRows] = await Promise.all([
+      const [settingsRows, voteRows, archiveRows] = await Promise.all([
         supabaseRest(`portfolio_settings?key=eq.${encodeURIComponent(SETTINGS_KEY)}&select=value`),
         supabaseRest('wishlist_vote_counts?select=option_id,votes'),
+        supabaseRest('wishlist_votes?select=id,created_at,selected_ids,selected_titles,note&order=created_at.desc&limit=250'),
       ]);
 
+      const voteArchive = Array.isArray(archiveRows) ? archiveRows.map(normalizeVoteRecord) : [];
+      const writtenNotes = voteArchive.filter((vote) => vote.note);
       const config = normalizeConfig(settingsRows?.[0]?.value);
+
       return sendJson(res, 200, {
         ok: true,
         settingsKey: SETTINGS_KEY,
         config,
         submittedVotes: Array.isArray(voteRows) ? voteRows : [],
+        voteArchive,
+        writtenNotes,
       });
     }
 
