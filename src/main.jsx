@@ -29,22 +29,21 @@ const OPTIONS = [
 const MAX_VOTES = 3;
 const LOCK_KEY = 'cyberpop_wishlist_vote_lock_summer_2026_v1';
 const params = new URLSearchParams(window.location.search);
-const isResultsPage = params.get('results') === '1' || window.location.pathname.includes('results');
+const routePath = window.location.pathname.replace(/\/+$/, '') || '/';
+const isVoteRoute = routePath === '/vote' || params.get('vote') === '1';
 const isEmbed = params.get('embed') === '1';
 const isDebug = params.get('debug') === '1';
 
-function makeModeUrl(resultsMode) {
-  const nextParams = new URLSearchParams(window.location.search);
-  nextParams.delete('voteUrl');
-  nextParams.delete('resultsUrl');
-  if (resultsMode) nextParams.set('results', '1');
-  else nextParams.delete('results');
+function makeAppUrl(path) {
+  const nextParams = new URLSearchParams();
+  if (isEmbed) nextParams.set('embed', '1');
+  if (isDebug) nextParams.set('debug', '1');
   const search = nextParams.toString();
-  return `${window.location.pathname}${search ? `?${search}` : ''}${window.location.hash}`;
+  return `${path}${search ? `?${search}` : ''}`;
 }
 
-const voteUrl = makeModeUrl(false);
-const resultsUrl = makeModeUrl(true);
+const voteUrl = makeAppUrl('/vote');
+const resultsUrl = makeAppUrl('/');
 
 function goToResults(event) { event.preventDefault(); window.location.assign(resultsUrl); }
 function goToVote(event) { event.preventDefault(); window.location.assign(voteUrl); }
@@ -82,13 +81,14 @@ function normalizeDashboardConfig(value = {}) {
   return { manualVotes: source.manualVotes || source.manual_votes || {}, sections: normalizeDashboardSections(source.sections) };
 }
 
-function makeEmptyResults(counts = [], dashboardConfig = normalizeDashboardConfig()) {
-  const countMap = new Map(counts.map((item) => [item.option_id, numberValue(item.votes)]));
+function buildResultRows(counts = [], dashboardConfig = normalizeDashboardConfig()) {
+  const submittedMap = new Map(counts.map((item) => [item.option_id, numberValue(item.votes)]));
   const manualVotes = dashboardConfig?.manualVotes || {};
   const rows = OPTIONS.map((option) => {
-    const submittedVotes = countMap.get(option.id) || 0;
+    const submittedVotes = submittedMap.get(option.id) || 0;
     const manualVoteOffset = numberValue(manualVotes[option.id]);
-    return { ...option, votes: Math.max(0, submittedVotes + manualVoteOffset), submittedVotes, manualVoteOffset };
+    const votes = Math.max(0, submittedVotes + manualVoteOffset);
+    return { ...option, votes, submittedVotes, manualVoteOffset };
   });
   rows.sort((a, b) => b.votes - a.votes || a.title.localeCompare(b.title));
   const total = rows.reduce((sum, row) => sum + row.votes, 0);
@@ -99,7 +99,7 @@ function Shell({ children }) { return <main className={`page ${isEmbed ? 'embed'
 
 function DebugPanel({ error }) {
   if (!isDebug) return null;
-  return <div className="debug"><div>Supabase URL: {SUPABASE_URL ? 'found' : 'missing'}</div><div>Anon key: {SUPABASE_ANON_KEY ? 'found' : 'missing'}</div><div>Client: {supabase ? 'connected' : 'missing'}</div>{error ? <pre>{String(error)}</pre> : null}</div>;
+  return <div className="debug"><div>Route: {routePath}</div><div>Supabase URL: {SUPABASE_URL ? 'found' : 'missing'}</div><div>Anon key: {SUPABASE_ANON_KEY ? 'found' : 'missing'}</div><div>Client: {supabase ? 'connected' : 'missing'}</div>{error ? <pre>{String(error)}</pre> : null}</div>;
 }
 
 function Hearts({ count, max = MAX_VOTES }) {
@@ -138,7 +138,10 @@ function VotePage() {
 
   return (
     <Shell>
-      <section className="hero"><div><div className="pill">Patreon wishlist vote</div><h1>WHAT SHOULD WE SCULPT NEXT?</h1><p>Vote for up to 3 characters you would like to see as future multipart 3D printable models.</p></div><div className="voteBox"><span>{isLocked ? 'Vote saved' : 'Votes selected'}</span><strong>{isLocked ? `${lockedData.selected?.length || 0}/${MAX_VOTES}` : `${selected.length}/${MAX_VOTES}`}</strong><Hearts count={isLocked ? lockedData.selected?.length || 0 : selected.length} /></div></section>
+      <section className="hero">
+        <div><div className="pill">Patreon wishlist vote</div><h1>WHAT SHOULD WE SCULPT NEXT?</h1><p>Vote for up to 3 characters you would like to see as future multipart 3D printable models.</p></div>
+        <div className="voteBox"><span>{isLocked ? 'Vote saved' : 'Votes selected'}</span><strong>{isLocked ? `${lockedData.selected?.length || 0}/${MAX_VOTES}` : `${selected.length}/${MAX_VOTES}`}</strong><Hearts count={isLocked ? lockedData.selected?.length || 0 : selected.length} /></div>
+      </section>
       {isLocked ? <section className="notice success"><strong>Your vote has been saved.</strong><span>Thanks for helping shape the next release. This browser is now locked for voting.</span><a href={resultsUrl} onClick={goToResults}>View live results</a></section> : null}
       {status === 'paused' ? <section className="notice warning"><strong>Voting is temporarily paused.</strong><span>Please check back soon. Your page is working, but votes are not being accepted right now.</span></section> : null}
       <section className="grid">{OPTIONS.map((option) => { const picked = selected.includes(option.id) || lockedData?.selected?.includes(option.id); const disabled = isLocked || submitting || status === 'paused' || (!picked && selected.length >= MAX_VOTES); return <button key={option.id} type="button" disabled={disabled} className={`card ${picked ? 'picked' : ''}`} onClick={() => toggleVote(option.id)}><span className="line" /><span className="category">{option.category}</span><strong>{option.title}</strong><small>{option.subtitle}</small><span className="cardFooter"><b>{picked ? 'SELECTED' : isLocked ? 'LOCKED' : 'VOTE'}</b><i>{picked ? '♥' : '♡'}</i></span></button>; })}</section>
@@ -157,7 +160,7 @@ function ModelsInDevelopment({ sections = DEFAULT_MODEL_SECTIONS }) {
 
 function ResultsPage() {
   const defaultDashboard = normalizeDashboardConfig();
-  const [rows, setRows] = useState(makeEmptyResults([], defaultDashboard));
+  const [rows, setRows] = useState(buildResultRows([], defaultDashboard));
   const [modelSections, setModelSections] = useState(defaultDashboard.sections);
   const [status, setStatus] = useState('loading');
   const [error, setError] = useState('');
@@ -171,7 +174,7 @@ function ResultsPage() {
     if (fetchError) { setError(fetchError.message || 'Results fetch failed'); setStatus('error'); return; }
     if (dashboardError) console.warn('Dashboard settings fetch failed:', dashboardError.message);
     const dashboardConfig = normalizeDashboardConfig(dashboardError ? null : dashboardRow?.value);
-    setRows(makeEmptyResults(data || [], dashboardConfig));
+    setRows(buildResultRows(data || [], dashboardConfig));
     setModelSections(dashboardConfig.sections);
     setError(''); setStatus('ready');
   }
@@ -179,12 +182,14 @@ function ResultsPage() {
   useEffect(() => { loadResults(); const interval = window.setInterval(loadResults, 20000); return () => window.clearInterval(interval); }, []);
 
   const totalVotes = rows.reduce((sum, row) => sum + row.votes, 0);
+  const submittedTotal = rows.reduce((sum, row) => sum + row.submittedVotes, 0);
+  const manualTotal = rows.reduce((sum, row) => sum + row.manualVoteOffset, 0);
   const topThree = rows.slice(0, 3);
   const leader = rows[0];
 
-  return <Shell><section className="resultsHero"><div><div className="pill live"><span /> LIVE VOTE RESULTS</div><h1>{leader?.votes > 0 ? `${leader.title} IS LEADING` : 'CURRENT LEADING CHARACTER'}</h1><p>Live results are calculated from submitted wishlist votes and admin-added outside votes. Updates refresh automatically.</p></div><a className="voteLink" href={voteUrl} onClick={goToVote}>VOTE NOW</a></section>{status === 'error' ? <section className="notice warning"><strong>Live results are temporarily unavailable.</strong><span>Please check back soon.</span></section> : null}<section className="leaderCard"><span>Winning right now</span><h2>{leader?.votes > 0 ? leader.title : 'No votes yet'}</h2><p>{leader?.votes > 0 ? leader.subtitle : 'Be the first to vote.'}</p><strong>{leader?.votes || 0} votes · {leader?.percent || 0}%</strong></section><section className="resultsLayout"><div className="topThree"><h3>Top 3</h3>{topThree.map((row, index) => <div className="rankCard" key={row.id}><span className="rank">#{index + 1}</span><div className="rankMain"><strong>{row.title}</strong><small>{row.subtitle}</small><div className="bar"><span style={{ width: `${row.percent}%` }} /></div></div><b>{row.votes} votes · {row.percent}%</b></div>)}</div><aside className="distribution"><h3>All options</h3><p>{totalVotes} total votes</p>{rows.map((row) => <div className="miniRow" key={row.id}><span>{row.title}</span><b>{row.votes} · {row.percent}%</b></div>)}</aside></section><ModelsInDevelopment sections={modelSections} /><DebugPanel error={error} /></Shell>;
+  return <Shell><section className="resultsHero"><div><div className="pill live"><span /> LIVE VOTE RESULTS</div><h1>{leader?.votes > 0 ? `${leader.title} IS LEADING` : 'CURRENT LEADING CHARACTER'}</h1><p>Live results combine submitted wishlist votes with admin-added outside votes. Updates refresh automatically.</p></div><a className="voteLink" href={voteUrl} onClick={goToVote}>VOTE NOW</a></section>{status === 'error' ? <section className="notice warning"><strong>Live results are temporarily unavailable.</strong><span>Please check back soon.</span></section> : null}<section className="leaderCard"><span>Winning right now</span><h2>{leader?.votes > 0 ? leader.title : 'No votes yet'}</h2><p>{leader?.votes > 0 ? leader.subtitle : 'Be the first to vote.'}</p><strong>{leader?.votes || 0} votes · {leader?.percent || 0}%</strong></section><section className="resultsLayout"><div className="topThree"><h3>Top 3</h3>{topThree.map((row, index) => <div className="rankCard" key={row.id}><span className="rank">#{index + 1}</span><div className="rankMain"><strong>{row.title}</strong><small>{row.subtitle}</small><div className="bar"><span style={{ width: `${row.percent}%` }} /></div></div><b>{row.votes} votes · {row.percent}%</b></div>)}</div><aside className="distribution"><h3>All options</h3><p>{totalVotes} total votes</p><p>{submittedTotal} submitted · {manualTotal} admin-added</p>{rows.map((row) => <div className="miniRow" key={row.id}><span>{row.title}</span><b>{row.votes} · {row.percent}%</b></div>)}</aside></section><ModelsInDevelopment sections={modelSections} /><DebugPanel error={error} /></Shell>;
 }
 
-function App() { return isResultsPage ? <ResultsPage /> : <VotePage />; }
+function App() { return isVoteRoute ? <VotePage /> : <ResultsPage />; }
 
 createRoot(document.getElementById('root')).render(<App />);
