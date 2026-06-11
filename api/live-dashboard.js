@@ -70,6 +70,17 @@ function normalizeVoteRecord(row) {
   };
 }
 
+async function fetchVoteArchive() {
+  try {
+    return await supabaseRest('wishlist_votes?select=id,created_at,username,selected_ids,selected_titles,note&order=created_at.desc&limit=250');
+  } catch (error) {
+    if (String(error.message || '').includes('wishlist_votes.username')) {
+      return supabaseRest('wishlist_votes?select=id,created_at,selected_ids,selected_titles,note&order=created_at.desc&limit=250');
+    }
+    throw error;
+  }
+}
+
 export default async function handler(req, res) {
   setCors(res);
 
@@ -82,7 +93,7 @@ export default async function handler(req, res) {
       const [settingsRows, voteRows, archiveRows] = await Promise.all([
         supabaseRest(`portfolio_settings?key=eq.${encodeURIComponent(SETTINGS_KEY)}&select=value`),
         supabaseRest('wishlist_vote_counts?select=option_id,votes'),
-        supabaseRest('wishlist_votes?select=id,created_at,username,selected_ids,selected_titles,note&order=created_at.desc&limit=250'),
+        fetchVoteArchive(),
       ]);
 
       const voteArchive = Array.isArray(archiveRows) ? archiveRows.map(normalizeVoteRecord) : [];
