@@ -26,7 +26,7 @@ const DEFAULT_OPTIONS = [
 ];
 
 const MAX_VOTES = 3;
-const LOCK_KEY = 'cyberpop_wishlist_vote_lock_summer_2026_v1';
+const LOCK_KEY = 'cyberpop_wishlist_vote_lock_2026_07_custom_poll_v1';
 const params = new URLSearchParams(window.location.search);
 const routePath = window.location.pathname.replace(/\/+$/, '') || '/';
 const isVoteRoute = routePath === '/vote' || params.get('vote') === '1';
