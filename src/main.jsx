@@ -8,7 +8,7 @@ const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
 const DASHBOARD_SETTINGS_KEY = 'wishlist_dashboard';
 const supabase = SUPABASE_URL && SUPABASE_ANON_KEY ? createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
 
-const OPTIONS = [
+const DEFAULT_OPTIONS = [
   { id: 'summer-2026-zangief-beach', title: 'ZANGIEF BEACH COSTUME', subtitle: 'STREET FIGHTER', category: 'SUMMER FIGHTERS' },
   { id: 'summer-2026-guile-beach', title: 'GUILE BEACH COSTUME', subtitle: 'STREET FIGHTER', category: 'SUMMER FIGHTERS' },
   { id: 'summer-2026-sakura-beach', title: 'SAKURA BEACH COSTUME', subtitle: 'STREET FIGHTER', category: 'SUMMER FIGHTERS' },
@@ -35,7 +35,40 @@ const isDebug = params.get('debug') === '1';
 const voteUrl = '/vote';
 const resultsUrl = '/';
 
-function optionById(id) { return OPTIONS.find((option) => option.id === id); }
+function slugify(value) {
+  return String(value || '')
+    .toLowerCase()
+    .trim()
+    .replace(/[ı]/g, 'i')
+    .replace(/[ğ]/g, 'g')
+    .replace(/[ü]/g, 'u')
+    .replace(/[ş]/g, 's')
+    .replace(/[ö]/g, 'o')
+    .replace(/[ç]/g, 'c')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
+
+function normalizeOptions(value) {
+  const raw = Array.isArray(value) ? value : DEFAULT_OPTIONS;
+  const seen = new Set();
+  return raw.map((item, index) => {
+    const title = String(item?.title || item?.model_name || '').trim();
+    const subtitle = String(item?.subtitle || '').trim();
+    const category = String(item?.category || '').trim();
+    const baseId = String(item?.id || item?.option_id || slugify(title) || `option-${index + 1}`).trim();
+    let id = slugify(baseId) || `option-${index + 1}`;
+    let step = 2;
+    while (seen.has(id)) {
+      id = `${slugify(baseId) || `option-${index + 1}`}-${step}`;
+      step += 1;
+    }
+    seen.add(id);
+    return { id, title: title || `OPTION ${index + 1}`, subtitle, category };
+  }).filter((item) => item.id && item.title);
+}
+
+function optionById(options, id) { return normalizeOptions(options).find((option) => option.id === id); }
 function numberValue(value) { const parsed = Number(value); return Number.isFinite(parsed) ? parsed : 0; }
 function goToResults(event) { event.preventDefault(); window.location.assign(resultsUrl); }
 function goToVote(event) { event.preventDefault(); window.location.assign(voteUrl); }
@@ -67,13 +100,13 @@ function normalizeDashboardSections(value) {
 
 function normalizeDashboardConfig(value = {}) {
   const source = value && typeof value === 'object' ? value : {};
-  return { manualVotes: source.manualVotes || source.manual_votes || {}, sections: normalizeDashboardSections(source.sections) };
+  return { manualVotes: source.manualVotes || source.manual_votes || {}, options: normalizeOptions(source.options), sections: normalizeDashboardSections(source.sections) };
 }
 
 function buildResultRows(counts = [], dashboardConfig = normalizeDashboardConfig()) {
   const submittedMap = new Map(counts.map((item) => [item.option_id, numberValue(item.votes)]));
   const manualVotes = dashboardConfig?.manualVotes || {};
-  const rows = OPTIONS.map((option) => {
+  const rows = normalizeOptions(dashboardConfig?.options).map((option) => {
     const submittedVotes = submittedMap.get(option.id) || 0;
     const manualVoteOffset = numberValue(manualVotes[option.id]);
     return { ...option, votes: Math.max(0, submittedVotes + manualVoteOffset), submittedVotes, manualVoteOffset };
@@ -88,9 +121,11 @@ function DebugPanel({ error }) { if (!isDebug) return null; return <div classNam
 function Hearts({ count, max = MAX_VOTES }) { return <div className="hearts" aria-label={`${count} of ${max} votes selected`}>{Array.from({ length: max }).map((_, index) => <span key={index} className={`heart ${index < count ? 'active' : ''}`}>♥</span>)}</div>; }
 function formatDate(value) { try { return new Intl.DateTimeFormat('en', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(value)); } catch { return ''; } }
 function displayNameForVote(vote) { return vote.username?.trim() || 'Anonymous supporter'; }
-function selectedTitlesForVote(vote) { return (vote.selected_titles?.length ? vote.selected_titles : vote.selected_ids?.map((id) => optionById(id)?.title || id) || []).join(', '); }
+function selectedTitlesForVote(vote, options = DEFAULT_OPTIONS) { return (vote.selected_titles?.length ? vote.selected_titles : vote.selected_ids?.map((id) => optionById(options, id)?.title || id) || []).join(', '); }
 
 function VotePage() {
+  const defaultDashboard = useMemo(() => normalizeDashboardConfig(), []);
+  const [dashboardConfig, setDashboardConfig] = useState(defaultDashboard);
   const [selected, setSelected] = useState([]);
   const [username, setUsername] = useState('');
   const [note, setNote] = useState('');
@@ -99,6 +134,15 @@ function VotePage() {
   const [error, setError] = useState('');
   const lockedData = useMemo(() => { try { return JSON.parse(localStorage.getItem(LOCK_KEY) || 'null'); } catch { return null; } }, [status]);
   const isLocked = Boolean(lockedData?.submittedAt);
+  const options = normalizeOptions(dashboardConfig.options);
+
+  async function loadVoteConfig() {
+    if (!supabase) return;
+    const { data } = await supabase.from('portfolio_settings').select('value').eq('key', DASHBOARD_SETTINGS_KEY).maybeSingle();
+    setDashboardConfig(normalizeDashboardConfig(data?.value));
+  }
+
+  useEffect(() => { loadVoteConfig(); }, []);
 
   function toggleVote(id) {
     if (isLocked || submitting || status === 'paused') return;
@@ -113,7 +157,7 @@ function VotePage() {
     if (!supabase) { setError('Supabase is not configured.'); setStatus('paused'); return; }
     if (selected.length === 0 || submitting || isLocked) return;
     setSubmitting(true); setError(''); setStatus('idle');
-    const selectedTitles = selected.map((id) => optionById(id)?.title || id);
+    const selectedTitles = selected.map((id) => optionById(options, id)?.title || id);
     const basePayload = { selected_ids: selected, selected_titles: selectedTitles, note: note.trim() || null };
     const usernamePayload = { ...basePayload, username: username.trim() || null };
     let { error: insertError } = await supabase.from('wishlist_votes').insert(usernamePayload);
@@ -126,9 +170,9 @@ function VotePage() {
     setStatus('saved'); setSubmitting(false);
   }
 
-  const formBlock = !isLocked ? <section className="formRow enhanced"><label><span>Display name / username</span><input value={username} maxLength={40} disabled={submitting || status === 'paused'} onChange={(event) => setUsername(event.target.value)} placeholder="Optional — leave empty to stay anonymous" /></label><label><span>Message or wishlist note</span><textarea value={note} disabled={submitting || status === 'paused'} onChange={(event) => setNote(event.target.value)} placeholder="Optional: write another character, series, benefit, file feature, or Patreon improvement..." /></label><button className="submit" disabled={selected.length === 0 || submitting || status === 'paused'} onClick={submitVote}>{submitting ? 'Saving...' : 'Submit vote'}</button></section> : null;
+  const formBlock = !isLocked ? <section className="formRow enhanced"><label><span>Display name / username</span><input value={username} maxLength={40} disabled={submitting || status === 'paused' || options.length === 0} onChange={(event) => setUsername(event.target.value)} placeholder="Optional — leave empty to stay anonymous" /></label><label><span>Message or wishlist note</span><textarea value={note} disabled={submitting || status === 'paused' || options.length === 0} onChange={(event) => setNote(event.target.value)} placeholder="Optional: write another character, series, benefit, file feature, or Patreon improvement..." /></label><button className="submit" disabled={selected.length === 0 || submitting || status === 'paused' || options.length === 0} onClick={submitVote}>{submitting ? 'Saving...' : 'Submit vote'}</button></section> : null;
 
-  return <Shell><section className="hero"><div><div className="pill">Patreon wishlist vote</div><h1>WHAT SHOULD WE SCULPT NEXT?</h1><p>Vote for up to 3 characters you would like to see as future multipart 3D printable models.</p></div><div className="voteBox"><span>{isLocked ? 'Vote saved' : 'Votes selected'}</span><strong>{isLocked ? `${lockedData.selected?.length || 0}/${MAX_VOTES}` : `${selected.length}/${MAX_VOTES}`}</strong><Hearts count={isLocked ? lockedData.selected?.length || 0 : selected.length} /></div></section>{isLocked ? <section className="notice success"><strong>Your vote has been saved.</strong><span>Thanks for helping shape the next release. This browser is now locked for voting.</span><a href={resultsUrl} onClick={goToResults}>View live results</a></section> : null}{status === 'paused' ? <section className="notice warning"><strong>Voting is temporarily paused.</strong><span>Please check back soon. {error}</span></section> : null}{formBlock}<section className="grid">{OPTIONS.map((option) => { const picked = selected.includes(option.id) || lockedData?.selected?.includes(option.id); const disabled = isLocked || submitting || status === 'paused' || (!picked && selected.length >= MAX_VOTES); return <button key={option.id} type="button" disabled={disabled} className={`card ${picked ? 'picked' : ''}`} onClick={() => toggleVote(option.id)}><span className="line" /><span className="category">{option.category}</span><strong>{option.title}</strong><small>{option.subtitle}</small><span className="cardFooter"><b>{picked ? 'SELECTED' : isLocked ? 'LOCKED' : 'VOTE'}</b><i>{picked ? '♥' : '♡'}</i></span></button>; })}</section><DebugPanel error={error} /></Shell>;
+  return <Shell><section className="hero"><div><div className="pill">Patreon wishlist vote</div><h1>WHAT SHOULD WE SCULPT NEXT?</h1><p>Vote for up to 3 characters you would like to see as future multipart 3D printable models.</p></div><div className="voteBox"><span>{isLocked ? 'Vote saved' : 'Votes selected'}</span><strong>{isLocked ? `${lockedData.selected?.length || 0}/${MAX_VOTES}` : `${selected.length}/${MAX_VOTES}`}</strong><Hearts count={isLocked ? lockedData.selected?.length || 0 : selected.length} /></div></section>{isLocked ? <section className="notice success"><strong>Your vote has been saved.</strong><span>Thanks for helping shape the next release. This browser is now locked for voting.</span><a href={resultsUrl} onClick={goToResults}>View live results</a></section> : null}{status === 'paused' ? <section className="notice warning"><strong>Voting is temporarily paused.</strong><span>Please check back soon. {error}</span></section> : null}{options.length === 0 ? <section className="notice warning"><strong>No voting characters are listed right now.</strong><span>Please check back soon.</span></section> : null}{formBlock}<section className="grid">{options.map((option) => { const picked = selected.includes(option.id) || lockedData?.selected?.includes(option.id); const disabled = isLocked || submitting || status === 'paused' || (!picked && selected.length >= MAX_VOTES); return <button key={option.id} type="button" disabled={disabled} className={`card ${picked ? 'picked' : ''}`} onClick={() => toggleVote(option.id)}><span className="line" /><span className="category">{option.category}</span><strong>{option.title}</strong><small>{option.subtitle}</small><span className="cardFooter"><b>{picked ? 'SELECTED' : isLocked ? 'LOCKED' : 'VOTE'}</b><i>{picked ? '♥' : '♡'}</i></span></button>; })}</section><DebugPanel error={error} /></Shell>;
 }
 
 function ModelsInDevelopment({ sections = DEFAULT_MODEL_SECTIONS }) {
@@ -136,15 +180,16 @@ function ModelsInDevelopment({ sections = DEFAULT_MODEL_SECTIONS }) {
   return <section className="developmentPanel" aria-label="Model status"><div className="developmentEyebrow">Model status</div><div className="developmentSections">{normalizedSections.map((section) => <div className="developmentSection" key={section.id}><div className="developmentSectionTitle">{section.title}</div><div className="developmentList">{section.items.map((model, index) => <div className="developmentItem" key={`${section.id}-${model.model_name || model}-${index}`}><strong>{typeof model === 'string' ? model : [model.model_name, model.status].filter(Boolean).join(' ')}</strong></div>)}</div></div>)}</div><div className="developmentAuthor">CYBERPOP3D</div></section>;
 }
 
-function PublicMessages({ messages = [] }) {
+function PublicMessages({ messages = [], options = DEFAULT_OPTIONS }) {
   const [openId, setOpenId] = useState(null);
-  return <section className="messagesPanel"><div className="messagesHeader"><div><span>Community archive</span><h3>Messages from you</h3></div><p>{messages.length ? `${messages.length} written message${messages.length === 1 ? '' : 's'} from voters.` : 'Written messages will appear here as voters leave notes.'}</p></div>{messages.length ? <div className="messageList">{messages.map((vote) => { const open = openId === vote.id; return <article className={`messageCard ${open ? 'open' : ''}`} key={vote.id}><button type="button" onClick={() => setOpenId(open ? null : vote.id)}><span><strong>{displayNameForVote(vote)}</strong><small>{formatDate(vote.created_at)}</small></span><b>{open ? 'Close' : 'Read'}</b></button>{open ? <div className="messageBody"><p>{vote.note}</p><small>Selected: {selectedTitlesForVote(vote)}</small></div> : null}</article>; })}</div> : <div className="messageEmpty">No written messages yet.</div>}</section>;
+  return <section className="messagesPanel"><div className="messagesHeader"><div><span>Community archive</span><h3>Messages from you</h3></div><p>{messages.length ? `${messages.length} written message${messages.length === 1 ? '' : 's'} from voters.` : 'Written messages will appear here as voters leave notes.'}</p></div>{messages.length ? <div className="messageList">{messages.map((vote) => { const open = openId === vote.id; return <article className={`messageCard ${open ? 'open' : ''}`} key={vote.id}><button type="button" onClick={() => setOpenId(open ? null : vote.id)}><span><strong>{displayNameForVote(vote)}</strong><small>{formatDate(vote.created_at)}</small></span><b>{open ? 'Close' : 'Read'}</b></button>{open ? <div className="messageBody"><p>{vote.note}</p><small>Selected: {selectedTitlesForVote(vote, options)}</small></div> : null}</article>; })}</div> : <div className="messageEmpty">No written messages yet.</div>}</section>;
 }
 
 function ResultsPage() {
   const defaultDashboard = normalizeDashboardConfig();
   const [rows, setRows] = useState(buildResultRows([], defaultDashboard));
   const [modelSections, setModelSections] = useState(defaultDashboard.sections);
+  const [resultOptions, setResultOptions] = useState(defaultDashboard.options);
   const [messages, setMessages] = useState([]);
   const [status, setStatus] = useState('loading');
   const [error, setError] = useState('');
@@ -160,6 +205,7 @@ function ResultsPage() {
     const dashboardConfig = normalizeDashboardConfig(dashboardError ? null : dashboardRow?.value);
     setRows(buildResultRows(data || [], dashboardConfig));
     setModelSections(dashboardConfig.sections);
+    setResultOptions(dashboardConfig.options);
     setMessages((archiveResponse?.writtenNotes || []).filter((vote) => vote.note).slice(0, 40));
     setError(''); setStatus('ready');
   }
@@ -169,7 +215,7 @@ function ResultsPage() {
   const topThree = rows.slice(0, 3);
   const leader = rows[0];
 
-  return <Shell><section className="resultsHero"><div><div className="pill live"><span /> LIVE VOTE RESULTS</div><h1>{leader?.votes > 0 ? `${leader.title} IS LEADING` : 'CURRENT LEADING CHARACTER'}</h1><p>Live results refresh automatically.</p></div><a className="voteLink" href={voteUrl} onClick={goToVote}>VOTE NOW</a></section>{status === 'error' ? <section className="notice warning"><strong>Live results are temporarily unavailable.</strong><span>Please check back soon.</span></section> : null}<section className="leaderCard"><span>Winning right now</span><h2>{leader?.votes > 0 ? leader.title : 'No votes yet'}</h2><p>{leader?.votes > 0 ? leader.subtitle : 'Be the first to vote.'}</p><strong>{leader?.votes || 0} votes · {leader?.percent || 0}%</strong></section><section className="resultsLayout"><div className="topThree"><h3>Top 3</h3>{topThree.map((row, index) => <div className="rankCard" key={row.id}><span className="rank">#{index + 1}</span><div className="rankMain"><strong>{row.title}</strong><small>{row.subtitle}</small><div className="bar"><span style={{ width: `${row.percent}%` }} /></div></div><b>{row.votes} votes · {row.percent}%</b></div>)}</div><aside className="distribution"><h3>All options</h3><p>{totalVotes} total votes</p>{rows.map((row) => <div className="miniRow" key={row.id}><span>{row.title}</span><b>{row.votes} · {row.percent}%</b></div>)}</aside></section><ModelsInDevelopment sections={modelSections} /><PublicMessages messages={messages} /><DebugPanel error={error} /></Shell>;
+  return <Shell><section className="resultsHero"><div><div className="pill live"><span /> LIVE VOTE RESULTS</div><h1>{leader?.votes > 0 ? `${leader.title} IS LEADING` : 'CURRENT LEADING CHARACTER'}</h1><p>Live results refresh automatically.</p></div><a className="voteLink" href={voteUrl} onClick={goToVote}>VOTE NOW</a></section>{status === 'error' ? <section className="notice warning"><strong>Live results are temporarily unavailable.</strong><span>Please check back soon.</span></section> : null}<section className="leaderCard"><span>Winning right now</span><h2>{leader?.votes > 0 ? leader.title : 'No votes yet'}</h2><p>{leader?.votes > 0 ? leader.subtitle : 'Be the first to vote.'}</p><strong>{leader?.votes || 0} votes · {leader?.percent || 0}%</strong></section><section className="resultsLayout"><div className="topThree"><h3>Top 3</h3>{topThree.map((row, index) => <div className="rankCard" key={row.id}><span className="rank">#{index + 1}</span><div className="rankMain"><strong>{row.title}</strong><small>{row.subtitle}</small><div className="bar"><span style={{ width: `${row.percent}%` }} /></div></div><b>{row.votes} votes · {row.percent}%</b></div>)}</div><aside className="distribution"><h3>All options</h3><p>{totalVotes} total votes</p>{rows.map((row) => <div className="miniRow" key={row.id}><span>{row.title}</span><b>{row.votes} · {row.percent}%</b></div>)}</aside></section><ModelsInDevelopment sections={modelSections} /><PublicMessages messages={messages} options={resultOptions} /><DebugPanel error={error} /></Shell>;
 }
 
 function App() { return isVoteRoute ? <VotePage /> : <ResultsPage />; }
