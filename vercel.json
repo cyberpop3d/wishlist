@@ -1,4 +1,7 @@
 {
+  "alias": [
+    "live.yontuk.com"
+  ],
   "rewrites": [
     {
       "source": "/vote",
