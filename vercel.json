@@ -1,8 +1,4 @@
 {
-  "$schema": "https://openapi.vercel.sh/vercel.json",
-  "alias": [
-    "live.yontuk.com"
-  ],
   "rewrites": [
     {
       "source": "/vote",
