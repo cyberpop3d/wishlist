@@ -466,17 +466,36 @@ function LivePage() {
         </p>
 
         <div className="envelopeGrid" aria-label="Wishlist submissions">
-          {userGroups.map((group) => (
-            <button
-              className="envelopeButton"
-              type="button"
-              key={group.key}
-              onClick={() => setSelectedUserKey(group.key)}
-              aria-label={'Open wishes from ' + group.username}
-            >
-              <EnvelopeIcon />
-            </button>
-          ))}
+          {userGroups.map((group) => {
+            const totalUpvotes = group.wishes.reduce(
+              (sum, wish) => sum + Number(wish.upvotes || 0),
+              0
+            );
+            const displayUsername = group.username === 'Anonymous'
+              ? 'Anonymous'
+              : '@' + group.username.replace(/^@/, '');
+
+            return (
+              <div className="envelopeEntry" key={group.key}>
+                <button
+                  className="envelopeButton"
+                  type="button"
+                  onClick={() => setSelectedUserKey(group.key)}
+                  aria-label={'Open wishes from ' + group.username}
+                >
+                  <span
+                    className="envelopeVoteCount"
+                    aria-label={totalUpvotes + ' total upvotes'}
+                  >
+                    <span aria-hidden="true">↑</span>
+                    <strong>{totalUpvotes}</strong>
+                  </span>
+                  <EnvelopeIcon />
+                </button>
+                <span className="envelopeUsername">{displayUsername}</span>
+              </div>
+            );
+          })}
         </div>
       </section>
 
