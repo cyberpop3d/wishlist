@@ -95,157 +95,242 @@ function BrandBar({ mode }) {
 
 function VotePage() {
   const countdown = useCountdown();
-  const [character, setCharacter] = useState('');
-  const [setting, setSetting] = useState('');
+  const [step, setStep] = useState('intro');
+  const [username, setUsername] = useState('');
+  const [usernameDraft, setUsernameDraft] = useState('');
+  const [wishes, setWishes] = useState(['', '', '']);
+  const [editingUsername, setEditingUsername] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [status, setStatus] = useState('idle');
   const [error, setError] = useState('');
+  const [videoUrl, setVideoUrl] = useState('');
 
-  const canSubmit = countdown.active
-    && character.trim().length >= 2
-    && setting.trim().length >= 2
+  useEffect(() => {
+    let cancelled = false;
+    let objectUrl = '';
+
+    async function loadWishPortalVideo() {
+      try {
+        const chunkNames = [
+          'chunk-00.txt',
+          'chunk-01.txt',
+          'chunk-02.txt',
+          'chunk-03.txt',
+          'chunk-04.txt',
+          'chunk-05.txt',
+          'chunk-06.txt',
+          'chunk-07.txt',
+          'chunk-07a.txt',
+          'chunk-08.txt',
+        ];
+
+        const parts = await Promise.all(
+          chunkNames.map(async (name) => {
+            const response = await fetch('/wishportal/' + name, { cache: 'force-cache' });
+            if (!response.ok) throw new Error('Could not load wish portal video.');
+            return (await response.text()).trim();
+          }),
+        );
+
+        const base64 = parts.join('');
+        const binary = window.atob(base64);
+        const bytes = new Uint8Array(binary.length);
+        for (let index = 0; index < binary.length; index += 1) {
+          bytes[index] = binary.charCodeAt(index);
+        }
+
+        objectUrl = URL.createObjectURL(new Blob([bytes], { type: 'video/mp4' }));
+        if (!cancelled) setVideoUrl(objectUrl);
+      } catch {
+        if (!cancelled) setError('Wish Portal video could not be loaded.');
+      }
+    }
+
+    loadWishPortalVideo();
+
+    return () => {
+      cancelled = true;
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    };
+  }, []);
+
+  const cleanUsername = username.trim().replace(/^@+/, '');
+  const canSaveUsername = usernameDraft.trim().replace(/^@+/, '').length >= 2;
+  const canSubmitWishes = countdown.active
+    && cleanUsername.length >= 2
+    && wishes.every((wish) => wish.trim().length >= 2)
     && !submitting;
 
-  async function submitWishlist(event) {
+  function saveUsername(event) {
     event.preventDefault();
-    if (!canSubmit) return;
+    const nextUsername = usernameDraft.trim().replace(/^@+/, '');
+    if (nextUsername.length < 2) return;
+    setUsername(nextUsername);
+    setUsernameDraft(nextUsername);
+    setEditingUsername(false);
+    setError('');
+    setStep('wishes');
+  }
+
+  function beginUsernameEdit() {
+    setUsernameDraft(username);
+    setEditingUsername(true);
+  }
+
+  function updateWish(index, value) {
+    setWishes((current) => current.map((wish, wishIndex) => (
+      wishIndex === index ? value : wish
+    )));
+  }
+
+  async function submitWishes(event) {
+    event.preventDefault();
+    if (!canSubmitWishes) return;
 
     if (!supabase) {
       setError('Wishlist connection is temporarily unavailable.');
-      setStatus('error');
       return;
     }
 
     setSubmitting(true);
     setError('');
-    setStatus('idle');
 
-    const cleanCharacter = character.trim();
-    const cleanSetting = setting.trim();
-    const settingSlug = slugify(cleanSetting) || 'custom';
+    const rows = wishes.map((wish, index) => ({
+      selected_ids: [`${CAMPAIGN_PREFIX}portal-${index + 1}`],
+      selected_titles: [wish.trim()],
+      note: '',
+      username: cleanUsername,
+    }));
 
-    const { error: insertError } = await supabase.from('wishlist_votes').insert({
-      selected_ids: [`${CAMPAIGN_PREFIX}${settingSlug}`],
-      selected_titles: [cleanCharacter],
-      note: cleanSetting,
-      username: null,
-    });
+    const { error: insertError } = await supabase.from('wishlist_votes').insert(rows);
 
     if (insertError) {
-      setError(insertError.message || 'Could not save your wishlist idea.');
-      setStatus('error');
+      setError(insertError.message || 'Could not save your wishes.');
       setSubmitting(false);
       return;
     }
 
-    setCharacter('');
-    setSetting('');
-    setStatus('saved');
     setSubmitting(false);
+    setStep('done');
+  }
+
+  if (step === 'intro') {
+    return (
+      <main className="voteExperience introExperience">
+        <section className="portalIntro">
+          <div className="portalVideoWrap">
+            {videoUrl ? (
+              <video
+                className="portalVideo"
+                src={videoUrl}
+                autoPlay
+                loop
+                muted
+                playsInline
+                preload="auto"
+              />
+            ) : (
+              <div className="portalVideoLoading">WISH PORTAL</div>
+            )}
+          </div>
+
+          <button
+            className="portalVoteButton"
+            type="button"
+            onClick={() => {
+              setError('');
+              setStep('username');
+            }}
+            disabled={!countdown.active}
+          >
+            {countdown.active ? 'CLICK TO VOTE' : 'WISHLIST CLOSED'}
+          </button>
+
+          {error ? <p className="portalInlineError">{error}</p> : null}
+        </section>
+      </main>
+    );
   }
 
   return (
-    <Shell>
-      <BrandBar mode="vote" />
+    <main className="voteExperience">
+      <section className="conversationStage">
+        {step !== 'username' && username ? (
+          <div className="conversationIdentity">
+            <span>@{cleanUsername}</span>
+            <button type="button" onClick={beginUsernameEdit}>Edit</button>
+          </div>
+        ) : null}
 
-      <section className="campaignHero">
-        <div className="heroCopy">
-          <div className="eyebrow"><span className="liveDot" /> 24 HOURS ONLY</div>
-          <h1>BUILD THE NEXT WISHLIST.</h1>
-          <p>
-            Tell us the character you want and the setting you want to see them in.
-            We are collecting wishlist ideas for one day only.
-          </p>
-        </div>
-        <Countdown />
-      </section>
+        {(step === 'username' || editingUsername) ? (
+          <form className="conversationCard" onSubmit={saveUsername}>
+            <h1>Your instagram username</h1>
+            <div className="speechInput">
+              <span>@</span>
+              <input
+                autoFocus
+                value={usernameDraft}
+                onChange={(event) => setUsernameDraft(event.target.value)}
+                placeholder="username"
+                autoComplete="off"
+                maxLength={60}
+              />
+            </div>
+            <button className="conversationNext" type="submit" disabled={!canSaveUsername}>
+              Continue
+            </button>
+            {editingUsername ? (
+              <button
+                className="conversationCancel"
+                type="button"
+                onClick={() => {
+                  setEditingUsername(false);
+                  setUsernameDraft(username);
+                }}
+              >
+                Cancel
+              </button>
+            ) : null}
+          </form>
+        ) : null}
 
-      <form className="wishlistForm" onSubmit={submitWishlist}>
-        <div className="fieldBlock">
-          <label htmlFor="character">Character</label>
-          <input
-            id="character"
-            value={character}
-            onChange={(event) => setCharacter(event.target.value)}
-            maxLength={90}
-            autoComplete="off"
-            placeholder="e.g. Spawn, Wonder Woman, Akuma..."
-            disabled={!countdown.active || submitting}
-          />
-          <small>Write the exact character you want us to consider.</small>
-        </div>
+        {step === 'wishes' && !editingUsername ? (
+          <form className="conversationCard wishesCard" onSubmit={submitWishes}>
+            <h1>3 Characters you want to see in the style you want</h1>
 
-        <div className="fieldBlock">
-          <label htmlFor="setting">Setting / concept</label>
-          <textarea
-            id="setting"
-            value={setting}
-            onChange={(event) => setSetting(event.target.value)}
-            maxLength={180}
-            placeholder="e.g. rain-soaked urban rooftop, 90s mob boss, wild west..."
-            disabled={!countdown.active || submitting}
-          />
-          <small>Describe the world, outfit direction, mood, era, or theme.</small>
-        </div>
-
-        <details className="recommendations">
-          <summary>
-            <span>
-              <b>Recommendations</b>
-              <small>Need a direction? Open style ideas.</small>
-            </span>
-            <i>+</i>
-          </summary>
-          <div className="recommendationBody">
-            <p>Pick one as a starting point. You can still edit the setting afterwards.</p>
-            <div className="recommendationChips">
-              {SETTING_RECOMMENDATIONS.map((item) => (
-                <button
-                  type="button"
-                  key={item}
-                  className={setting.toLowerCase() === item.toLowerCase() ? 'selected' : ''}
-                  onClick={() => setSetting(item)}
-                  disabled={!countdown.active || submitting}
-                >
-                  {item}
-                </button>
+            <div className="wishInputs">
+              {wishes.map((wish, index) => (
+                <div className="speechInput wishSpeech" key={index}>
+                  <span>{index + 1}</span>
+                  <textarea
+                    autoFocus={index === 0}
+                    value={wish}
+                    onChange={(event) => updateWish(index, event.target.value)}
+                    placeholder="Character + style"
+                    maxLength={180}
+                  />
+                </div>
               ))}
             </div>
-          </div>
-        </details>
 
-        {status === 'saved' ? (
-          <div className="formNotice success">
-            <strong>Added to the wishlist.</strong>
-            <span>You can submit another character + setting while the 24-hour window is open.</span>
-          </div>
+            {error ? <p className="portalInlineError">{error}</p> : null}
+
+            <button className="conversationNext" type="submit" disabled={!canSubmitWishes}>
+              {submitting ? 'Sending...' : 'Send Wishes'}
+            </button>
+          </form>
         ) : null}
 
-        {status === 'error' ? (
-          <div className="formNotice error">
-            <strong>Could not submit.</strong>
-            <span>{error}</span>
+        {step === 'done' && !editingUsername ? (
+          <div className="conversationCard doneCard">
+            <h1>Thank You,</h1>
+            <p>you can view all other wishes from here</p>
+            <a className="liveWishlistButton" href={liveUrl}>LIVE.YONTUK.COM</a>
           </div>
         ) : null}
-
-        {!countdown.active ? (
-          <div className="formNotice closed">
-            <strong>The 24-hour wishlist window is closed.</strong>
-            <span>You can still view everything collected on the live page.</span>
-          </div>
-        ) : null}
-
-        <div className="submitRow">
-          <button className="submitButton" type="submit" disabled={!canSubmit}>
-            {submitting ? 'Adding...' : 'Add to Wishlist'}
-          </button>
-          <a className="secondaryLink" href={liveUrl}>Watch the live wishlist →</a>
-        </div>
-      </form>
-    </Shell>
+      </section>
+    </main>
   );
 }
-
 function wishlistEntryFromVote(vote) {
   const selectedIds = Array.isArray(vote?.selected_ids) ? vote.selected_ids : [];
   const marker = selectedIds.find((id) => String(id || '').startsWith(CAMPAIGN_PREFIX));
@@ -258,8 +343,9 @@ function wishlistEntryFromVote(vote) {
     ? String(vote.selected_titles[0] || '').trim()
     : '';
   const setting = String(vote.note || '').trim();
+  const isPortalWish = String(marker).includes(':portal-');
 
-  if (!character || !setting) return null;
+  if (!character || (!setting && !isPortalWish)) return null;
 
   const username = String(vote.username || '').trim();
 
@@ -411,7 +497,7 @@ function LivePage() {
                 <article className="wishItem" key={wish.id}>
                   <span>{String(index + 1).padStart(2, '0')}</span>
                   <h2>{wish.character}</h2>
-                  <p>{wish.setting}</p>
+                  {wish.setting ? <p>{wish.setting}</p> : null}
                 </article>
               ))}
             </div>
