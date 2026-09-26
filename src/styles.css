@@ -1315,9 +1315,13 @@ h1 {
 }
 
 .envelopeVoteCount > strong {
-  font-size: 11px;
-  font-weight: 950;
-  letter-spacing: -.02em;
+  font-size: 13px;
+  font-weight: 1000;
+  letter-spacing: -.03em;
+  color: #fff;
+  text-shadow:
+    0 0 6px rgba(255,255,255,.42),
+    0 0 14px rgba(255,255,255,.18);
 }
 
 .envelopeEntry:hover .envelopeVoteCount {
