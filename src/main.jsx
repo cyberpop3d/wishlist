@@ -320,12 +320,7 @@ function LivePage() {
 
       <section className="campaignHero liveHero">
         <div className="heroCopy">
-          <div className="eyebrow"><span className="liveDot" /> LIVE WISHLIST</div>
-          <h1>ONE DAY. YOUR IDEAS.</h1>
-          <p>
-            Every character + setting submitted during this 24-hour wishlist window appears here.
-            The feed refreshes automatically.
-          </p>
+          <h1>Propose your idea. It can be any theme, any character that you want to see in our design style.</h1>
         </div>
         <Countdown />
       </section>
