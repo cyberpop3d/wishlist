@@ -360,6 +360,7 @@ function LivePage() {
   const [entries, setEntries] = useState([]);
   const [selectedUserKey, setSelectedUserKey] = useState('');
   const [pendingUpvotes, setPendingUpvotes] = useState({});
+  const [sparkleVotes, setSparkleVotes] = useState({});
 
   async function loadWishlist() {
     try {
@@ -439,6 +440,13 @@ function LivePage() {
             }
           : entry
       )));
+
+      if (data.upvoted) {
+        setSparkleVotes((current) => ({ ...current, [voteId]: true }));
+        window.setTimeout(() => {
+          setSparkleVotes((current) => ({ ...current, [voteId]: false }));
+        }, 850);
+      }
     } catch {
       // Leave the current count unchanged if the request fails.
     } finally {
@@ -530,7 +538,7 @@ function LivePage() {
                   {wish.setting ? <p>{wish.setting}</p> : null}
                   <div className="wishItemActions">
                     <button
-                      className={`wishVoteButton ${wish.viewerUpvoted ? 'voted' : ''}`}
+                      className={`wishVoteButton ${wish.viewerUpvoted ? 'voted' : ''} ${sparkleVotes[wish.id] ? 'sparkled' : ''}`}
                       type="button"
                       onClick={() => handleUpvote(wish.id)}
                       disabled={!!pendingUpvotes[wish.id]}
@@ -543,6 +551,13 @@ function LivePage() {
                       <span>{wish.viewerUpvoted ? 'UPVOTED' : 'UPVOTE'}</span>
                       <strong>{wish.upvotes || 0}</strong>
                     </button>
+                    {sparkleVotes[wish.id] ? (
+                      <span className="sparkleBurst" aria-hidden="true">
+                        {Array.from({ length: 9 }).map((_, sparkleIndex) => (
+                          <i key={sparkleIndex}>✦</i>
+                        ))}
+                      </span>
+                    ) : null}
                   </div>
                 </article>
               ))}
