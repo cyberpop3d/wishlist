@@ -619,3 +619,202 @@ h1 {
     grid-template-columns: 40px minmax(0, 1fr);
   }
 }
+
+
+/* Minimal live wishlist */
+.minimalWishlist {
+  min-height: calc(100vh - 78px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: clamp(58px, 9vh, 110px) 0 80px;
+}
+
+.wishlistTitle {
+  margin: 0 0 clamp(58px, 8vh, 92px);
+  max-width: none;
+  text-align: center;
+  font-size: clamp(58px, 10vw, 132px);
+  line-height: .82;
+  letter-spacing: -.065em;
+  font-weight: 950;
+  text-transform: uppercase;
+}
+
+.envelopeGrid {
+  width: min(920px, 100%);
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(112px, 1fr));
+  gap: clamp(22px, 4vw, 46px);
+  align-items: center;
+  justify-items: center;
+}
+
+.envelopeButton {
+  width: 118px;
+  height: 94px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  border-radius: 18px;
+  background: transparent;
+  color: #f7f7f5;
+  cursor: pointer;
+  transition: transform .18s ease, background .18s ease;
+}
+
+.envelopeButton:hover {
+  transform: translateY(-4px) scale(1.03);
+  background: rgba(255,255,255,.045);
+}
+
+.envelopeButton:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 5px;
+}
+
+.envelopeIcon {
+  width: 94px;
+  height: auto;
+  overflow: visible;
+}
+
+.envelopeIcon rect,
+.envelopeIcon path {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.wishOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  padding: 22px;
+  display: grid;
+  place-items: center;
+  background: rgba(0,0,0,.78);
+  backdrop-filter: blur(14px);
+}
+
+.wishLetter {
+  position: relative;
+  width: min(680px, 100%);
+  max-height: min(760px, calc(100vh - 44px));
+  overflow: auto;
+  border: 1px solid rgba(255,255,255,.14);
+  border-radius: 28px;
+  padding: clamp(26px, 5vw, 46px);
+  background: #0b0b0b;
+  box-shadow: 0 30px 100px rgba(0,0,0,.6);
+}
+
+.wishClose {
+  position: absolute;
+  top: 15px;
+  right: 17px;
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  background: rgba(255,255,255,.07);
+  color: #fff;
+  font-size: 27px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.wishAuthor {
+  padding-right: 50px;
+}
+
+.wishAuthor span {
+  display: block;
+  margin-bottom: 7px;
+  color: #777;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: .18em;
+}
+
+.wishAuthor strong {
+  display: block;
+  font-size: clamp(28px, 5vw, 44px);
+  line-height: 1;
+  letter-spacing: -.04em;
+  overflow-wrap: anywhere;
+}
+
+.wishList {
+  margin-top: 34px;
+  display: grid;
+  gap: 12px;
+}
+
+.wishItem {
+  border-top: 1px solid rgba(255,255,255,.11);
+  padding: 20px 0 6px;
+}
+
+.wishItem > span {
+  display: block;
+  margin-bottom: 8px;
+  color: #666;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: .16em;
+}
+
+.wishItem h2 {
+  margin: 0;
+  font-size: clamp(28px, 5vw, 44px);
+  line-height: .98;
+  letter-spacing: -.045em;
+  text-transform: uppercase;
+  overflow-wrap: anywhere;
+}
+
+.wishItem p {
+  margin: 10px 0 0;
+  color: #bdbdb8;
+  font-size: 16px;
+  line-height: 1.48;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 620px) {
+  .minimalWishlist {
+    padding-top: 54px;
+  }
+
+  .wishlistTitle {
+    margin-bottom: 52px;
+    font-size: clamp(58px, 21vw, 92px);
+  }
+
+  .envelopeGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 24px 10px;
+  }
+
+  .envelopeButton {
+    width: 104px;
+    height: 84px;
+  }
+
+  .envelopeIcon {
+    width: 84px;
+  }
+
+  .wishOverlay {
+    padding: 12px;
+  }
+
+  .wishLetter {
+    border-radius: 22px;
+    padding: 25px 20px 28px;
+  }
+}
