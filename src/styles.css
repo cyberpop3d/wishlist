@@ -1183,6 +1183,26 @@ h1 {
   background: rgba(255,255,255,.08);
 }
 
+.wishVoteButton.voted {
+  border-color: #f7f7f5;
+  background: #f7f7f5;
+  color: #050505;
+}
+
+.wishVoteButton.voted > span,
+.wishVoteButton.voted > span:first-child,
+.wishVoteButton.voted > strong {
+  color: #050505;
+}
+
+.wishVoteButton.voted > strong {
+  background: rgba(0,0,0,.09);
+}
+
+.wishVoteButton.voted:hover:not(:disabled) {
+  background: #deded9;
+}
+
 .wishVoteButton:disabled {
   opacity: .55;
   cursor: wait;
