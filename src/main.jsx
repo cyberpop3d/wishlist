@@ -10,7 +10,7 @@ const supabase = SUPABASE_URL && SUPABASE_ANON_KEY
   : null;
 
 const CAMPAIGN_START = new Date('2026-09-26T19:43:00Z');
-const CAMPAIGN_END = new Date('2026-09-27T19:43:00Z');
+const CAMPAIGN_END = new Date('2026-10-03T19:43:00Z');
 const CAMPAIGN_PREFIX = 'wishlist-24h-2026-09-26:';
 
 const SETTING_RECOMMENDATIONS = [
@@ -55,14 +55,15 @@ function useCountdown() {
 
   const remaining = Math.max(0, CAMPAIGN_END.getTime() - now.getTime());
   const totalSeconds = Math.floor(remaining / 1000);
-  const hours = Math.floor(totalSeconds / 3600);
+  const days = Math.floor(totalSeconds / 86400);
+  const hours = Math.floor((totalSeconds % 86400) / 3600);
   const minutes = Math.floor((totalSeconds % 3600) / 60);
   const seconds = totalSeconds % 60;
 
   return {
     active: now >= CAMPAIGN_START && now < CAMPAIGN_END,
     ended: now >= CAMPAIGN_END,
-    label: [hours, minutes, seconds].map((part) => String(part).padStart(2, '0')).join(':'),
+    label: `${days}D ${[hours, minutes, seconds].map((part) => String(part).padStart(2, '0')).join(':')}`,
   };
 }
 
@@ -73,7 +74,7 @@ function Countdown({ compact = false }) {
     <div className={`countdown ${compact ? 'compact' : ''} ${countdown.ended ? 'ended' : ''}`}>
       <span>{countdown.ended ? 'Wishlist closed' : 'Wishlist closes in'}</span>
       <strong>{countdown.ended ? '00:00:00' : countdown.label}</strong>
-      {!compact ? <small>One day only · September 26–27</small> : null}
+      {!compact ? <small>One week · September 26 – October 3</small> : null}
     </div>
   );
 }
@@ -302,6 +303,7 @@ function wishlistEntryFromVote(vote) {
     character,
     setting,
     username,
+    upvotes: Number(vote.upvotes || 0),
     createdAt,
   };
 }
@@ -316,6 +318,21 @@ function formatSubmittedTime(value) {
     }).format(value);
   } catch {
     return '';
+  }
+}
+
+function getOrCreateWishlistVoterToken() {
+  const storageKey = 'yontuk-wishlist-voter-token';
+  try {
+    const existing = window.localStorage.getItem(storageKey);
+    if (existing) return existing;
+    const next = window.crypto?.randomUUID
+      ? window.crypto.randomUUID()
+      : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    window.localStorage.setItem(storageKey, next);
+    return next;
+  } catch {
+    return `session-${Date.now()}-${Math.random().toString(36).slice(2)}`;
   }
 }
 
@@ -336,8 +353,10 @@ function EnvelopeIcon() {
 }
 
 function LivePage() {
+  const countdown = useCountdown();
   const [entries, setEntries] = useState([]);
   const [selectedUserKey, setSelectedUserKey] = useState('');
+  const [pendingUpvotes, setPendingUpvotes] = useState({});
 
   async function loadWishlist() {
     try {
@@ -386,6 +405,36 @@ function LivePage() {
 
   const selectedGroup = userGroups.find((group) => group.key === selectedUserKey) || null;
 
+  async function handleUpvote(voteId) {
+    if (!voteId || pendingUpvotes[voteId]) return;
+
+    setPendingUpvotes((current) => ({ ...current, [voteId]: true }));
+
+    try {
+      const response = await fetch('/api/upvote', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          voteId,
+          voterToken: getOrCreateWishlistVoterToken(),
+        }),
+      });
+
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Upvote failed');
+
+      setEntries((current) => current.map((entry) => (
+        entry.id === voteId
+          ? { ...entry, upvotes: Number(data.upvotes || 0) }
+          : entry
+      )));
+    } catch {
+      // Leave the current count unchanged if the request fails.
+    } finally {
+      setPendingUpvotes((current) => ({ ...current, [voteId]: false }));
+    }
+  }
+
   useEffect(() => {
     if (!selectedGroup) return undefined;
 
@@ -401,6 +450,9 @@ function LivePage() {
     <Shell>
       <section className="minimalWishlist">
         <h1 className="wishlistTitle">WISHLIST</h1>
+        <p className="wishlistCountdown">
+          {countdown.ended ? 'WISHLIST CLOSED' : `CLOSES IN ${countdown.label}`}
+        </p>
 
         <div className="envelopeGrid" aria-label="Wishlist submissions">
           {userGroups.map((group) => (
@@ -446,6 +498,19 @@ function LivePage() {
                   <span>{String(index + 1).padStart(2, '0')}</span>
                   <h2>{wish.character}</h2>
                   {wish.setting ? <p>{wish.setting}</p> : null}
+                  <div className="wishItemActions">
+                    <button
+                      className="wishVoteButton"
+                      type="button"
+                      onClick={() => handleUpvote(wish.id)}
+                      disabled={!!pendingUpvotes[wish.id]}
+                      aria-label={`Upvote ${wish.character}`}
+                    >
+                      <span aria-hidden="true">↑</span>
+                      <span>UPVOTE</span>
+                      <strong>{wish.upvotes || 0}</strong>
+                    </button>
+                  </div>
                 </article>
               ))}
             </div>
