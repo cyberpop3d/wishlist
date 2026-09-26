@@ -1303,10 +1303,13 @@ h1 {
   line-height: 1;
   font-variant-numeric: tabular-nums;
   pointer-events: none;
+  transform-origin: top right;
   transition:
+    transform .18s cubic-bezier(.2,.8,.2,1),
     color .2s ease,
     border-color .2s ease,
-    background .2s ease;
+    background .2s ease,
+    box-shadow .2s ease;
 }
 
 .envelopeVoteCount > span {
@@ -1322,12 +1325,30 @@ h1 {
   text-shadow:
     0 0 6px rgba(255,255,255,.42),
     0 0 14px rgba(255,255,255,.18);
+  transition:
+    font-size .18s cubic-bezier(.2,.8,.2,1),
+    text-shadow .18s ease;
 }
 
 .envelopeEntry:hover .envelopeVoteCount {
-  color: #f7f7f5;
-  border-color: rgba(255,255,255,.24);
-  background: rgba(12,12,12,.96);
+  transform: scale(1.22);
+  color: #fff;
+  border-color: rgba(255,255,255,.34);
+  background: rgba(12,12,12,.98);
+  box-shadow:
+    0 6px 20px rgba(0,0,0,.34),
+    0 0 14px rgba(255,255,255,.12);
+}
+
+.envelopeEntry:hover .envelopeVoteCount > strong {
+  font-size: 17px;
+  text-shadow:
+    0 0 7px rgba(255,255,255,.7),
+    0 0 18px rgba(255,255,255,.28);
+}
+
+.envelopeEntry:hover .envelopeVoteCount > span {
+  color: #fff;
 }
 
 .envelopeUsername {
