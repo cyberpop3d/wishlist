@@ -5,35 +5,30 @@ import './styles.css';
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || '';
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
-const DASHBOARD_SETTINGS_KEY = 'wishlist_dashboard';
-const supabase = SUPABASE_URL && SUPABASE_ANON_KEY ? createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
+const supabase = SUPABASE_URL && SUPABASE_ANON_KEY
+  ? createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+  : null;
 
-const DEFAULT_OPTIONS = [
-  { id: 'summer-2026-zangief-beach', title: 'ZANGIEF BEACH COSTUME', subtitle: 'STREET FIGHTER', category: 'SUMMER FIGHTERS' },
-  { id: 'summer-2026-guile-beach', title: 'GUILE BEACH COSTUME', subtitle: 'STREET FIGHTER', category: 'SUMMER FIGHTERS' },
-  { id: 'summer-2026-sakura-beach', title: 'SAKURA BEACH COSTUME', subtitle: 'STREET FIGHTER', category: 'SUMMER FIGHTERS' },
-  { id: 'summer-2026-kratos', title: 'KRATOS', subtitle: 'GOD OF WAR', category: 'PLAYSTATION CORE' },
-  { id: 'summer-2026-sonic-woody', title: 'SONIC WOODY', subtitle: 'SEGA X TOY STORY', category: 'CROSSOVER TOYBOX' },
-  { id: 'summer-2026-sheriff-amy', title: 'SHERIFF AMY', subtitle: 'SEGA X TOY STORY', category: 'CROSSOVER TOYBOX' },
-  { id: 'summer-2026-tails-lightyear-vs', title: 'TAILS LIGHTYEAR VS EGGMAN ZURG', subtitle: 'SEGA X TOY STORY', category: 'CROSSOVER TOYBOX' },
-  { id: 'summer-2026-raiden-shogun', title: 'RAIDEN SHOGUN', subtitle: 'GENSHIN IMPACT', category: 'GENSHIN IMPACT' },
-  { id: 'summer-2026-furina', title: 'FURINA', subtitle: 'GENSHIN IMPACT', category: 'GENSHIN IMPACT' },
-  { id: 'summer-2026-arlecchino', title: 'ARLECCHINO', subtitle: 'GENSHIN IMPACT', category: 'GENSHIN IMPACT' },
-  { id: 'summer-2026-iori-yagami', title: 'IORI YAGAMI', subtitle: 'THE KING OF FIGHTERS', category: 'KING OF FIGHTERS' },
-  { id: 'summer-2026-mai-shiranui', title: 'MAI SHIRANUI', subtitle: 'THE KING OF FIGHTERS', category: 'KING OF FIGHTERS' },
-  { id: 'summer-2026-kyo-kusanagi', title: 'KYO KUSANAGI', subtitle: 'THE KING OF FIGHTERS', category: 'KING OF FIGHTERS' },
-  { id: 'summer-2026-scorpion', title: 'SCORPION', subtitle: 'MORTAL KOMBAT', category: 'ARCADE / FIGHTING' },
+const CAMPAIGN_START = new Date('2026-09-26T19:43:00Z');
+const CAMPAIGN_END = new Date('2026-09-27T19:43:00Z');
+const CAMPAIGN_PREFIX = 'wishlist-24h-2026-09-26:';
+
+const SETTING_RECOMMENDATIONS = [
+  'Urban Style',
+  'Mob Boss Style',
+  'Wild West Style',
+  'Candy Style',
+  'Creepy Style',
 ];
 
-const MAX_VOTES = 3;
-const LOCK_KEY = 'cyberpop_wishlist_vote_lock_2026_07_custom_poll_v1';
 const params = new URLSearchParams(window.location.search);
 const routePath = window.location.pathname.replace(/\/+$/, '') || '/';
-const isVoteRoute = routePath === '/vote' || params.get('vote') === '1';
-const isEmbed = params.get('embed') === '1';
-const isDebug = params.get('debug') === '1';
-const voteUrl = '/vote';
-const resultsUrl = '/';
+const host = window.location.hostname.toLowerCase();
+const isVoteHost = host === 'vote.yontuk.com';
+const isVoteRoute = isVoteHost || routePath === '/vote' || params.get('vote') === '1';
+
+const voteUrl = 'https://vote.yontuk.com/';
+const liveUrl = 'https://live.yontuk.com/';
 
 function slugify(value) {
   return String(value || '')
@@ -49,174 +44,349 @@ function slugify(value) {
     .replace(/^-+|-+$/g, '');
 }
 
-function normalizeOptions(value) {
-  const raw = Array.isArray(value) ? value : DEFAULT_OPTIONS;
-  const seen = new Set();
-  return raw.map((item, index) => {
-    const title = String(item?.title || item?.model_name || '').trim();
-    const subtitle = String(item?.subtitle || '').trim();
-    const category = String(item?.category || '').trim();
-    const baseId = String(item?.id || item?.option_id || slugify(title) || `option-${index + 1}`).trim();
-    let id = slugify(baseId) || `option-${index + 1}`;
-    let step = 2;
-    while (seen.has(id)) {
-      id = `${slugify(baseId) || `option-${index + 1}`}-${step}`;
-      step += 1;
-    }
-    seen.add(id);
-    return { id, title: title || `OPTION ${index + 1}`, subtitle, category };
-  }).filter((item) => item.id && item.title);
+function useCountdown() {
+  const [now, setNow] = useState(() => new Date());
+
+  useEffect(() => {
+    const timer = window.setInterval(() => setNow(new Date()), 1000);
+    return () => window.clearInterval(timer);
+  }, []);
+
+  const remaining = Math.max(0, CAMPAIGN_END.getTime() - now.getTime());
+  const totalSeconds = Math.floor(remaining / 1000);
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+
+  return {
+    active: now >= CAMPAIGN_START && now < CAMPAIGN_END,
+    ended: now >= CAMPAIGN_END,
+    label: [hours, minutes, seconds].map((part) => String(part).padStart(2, '0')).join(':'),
+  };
 }
 
-function optionById(options, id) { return normalizeOptions(options).find((option) => option.id === id); }
-function numberValue(value) { const parsed = Number(value); return Number.isFinite(parsed) ? parsed : 0; }
-function goToResults(event) { event.preventDefault(); window.location.assign(resultsUrl); }
-function goToVote(event) { event.preventDefault(); window.location.assign(voteUrl); }
-function isMissingUsernameColumn(error) { return String(error?.message || '').toLowerCase().includes('username') && String(error?.message || '').toLowerCase().includes('column'); }
+function Countdown({ compact = false }) {
+  const countdown = useCountdown();
 
-const DEFAULT_MODEL_SECTIONS = [
-  { id: 'on-development', title: 'On development', items: [{ model_name: 'ZANGIEF', status: 'BEACH COSTUME', display_order: 1 }, { model_name: 'GUILE', status: 'BEACH COSTUME', display_order: 2 }] },
-  { id: 'recently-released', title: 'Recently released', items: [{ model_name: 'SUBZERO', status: '', display_order: 1 }, { model_name: 'VEGA', status: '', display_order: 2 }, { model_name: 'TOM&JERRY', status: 'BEACH EDITION', display_order: 3 }] },
-];
-
-function normalizeDashboardItems(value, fallback = []) {
-  if (Array.isArray(value)) {
-    return value.map((item, index) => {
-      if (typeof item === 'string') return { model_name: item.trim(), status: '', display_order: index + 1 };
-      return { model_name: item?.model_name || item?.title || '', status: item?.status || '', display_order: Number(item?.display_order || index + 1) };
-    }).filter((item) => item.model_name || item.status);
-  }
-  if (typeof value === 'string') return value.split('\n').map((item, index) => ({ model_name: item.trim(), status: '', display_order: index + 1 })).filter((item) => item.model_name);
-  return fallback;
+  return (
+    <div className={`countdown ${compact ? 'compact' : ''} ${countdown.ended ? 'ended' : ''}`}>
+      <span>{countdown.ended ? 'Wishlist closed' : 'Wishlist closes in'}</span>
+      <strong>{countdown.ended ? '00:00:00' : countdown.label}</strong>
+      {!compact ? <small>One day only · September 26–27</small> : null}
+    </div>
+  );
 }
 
-function normalizeDashboardSections(value) {
-  const raw = Array.isArray(value) && value.length ? value : DEFAULT_MODEL_SECTIONS;
-  return DEFAULT_MODEL_SECTIONS.map((fallbackSection, index) => {
-    const section = raw[index] || fallbackSection;
-    return { id: section.id || fallbackSection.id, title: section.title || fallbackSection.title, items: normalizeDashboardItems(section.items, fallbackSection.items) };
-  });
+function Shell({ children }) {
+  return <main className="page">{children}</main>;
 }
 
-function normalizeDashboardConfig(value = {}) {
-  const source = value && typeof value === 'object' ? value : {};
-  return { manualVotes: source.manualVotes || source.manual_votes || {}, options: normalizeOptions(source.options), sections: normalizeDashboardSections(source.sections) };
+function BrandBar({ mode }) {
+  return (
+    <header className="brandBar">
+      <a className="brand" href={liveUrl}>YONTUK</a>
+      <nav>
+        <a className={mode === 'live' ? 'active' : ''} href={liveUrl}>Live Wishlist</a>
+        <a className={mode === 'vote' ? 'active' : ''} href={voteUrl}>Submit an Idea</a>
+      </nav>
+    </header>
+  );
 }
-
-function buildResultRows(counts = [], dashboardConfig = normalizeDashboardConfig()) {
-  const submittedMap = new Map(counts.map((item) => [item.option_id, numberValue(item.votes)]));
-  const manualVotes = dashboardConfig?.manualVotes || {};
-  const rows = normalizeOptions(dashboardConfig?.options).map((option) => {
-    const submittedVotes = submittedMap.get(option.id) || 0;
-    const manualVoteOffset = numberValue(manualVotes[option.id]);
-    return { ...option, votes: Math.max(0, submittedVotes + manualVoteOffset), submittedVotes, manualVoteOffset };
-  });
-  rows.sort((a, b) => b.votes - a.votes || a.title.localeCompare(b.title));
-  const total = rows.reduce((sum, row) => sum + row.votes, 0);
-  return rows.map((row) => ({ ...row, percent: total > 0 ? Math.round((row.votes / total) * 100) : 0 }));
-}
-
-function Shell({ children }) { return <main className={`page ${isEmbed ? 'embed' : ''}`}>{children}</main>; }
-function DebugPanel({ error }) { if (!isDebug) return null; return <div className="debug"><div>Route: {routePath}</div><div>Supabase URL: {SUPABASE_URL ? 'found' : 'missing'}</div><div>Anon key: {SUPABASE_ANON_KEY ? 'found' : 'missing'}</div><div>Client: {supabase ? 'connected' : 'missing'}</div>{error ? <pre>{String(error)}</pre> : null}</div>; }
-function Hearts({ count, max = MAX_VOTES }) { return <div className="hearts" aria-label={`${count} of ${max} votes selected`}>{Array.from({ length: max }).map((_, index) => <span key={index} className={`heart ${index < count ? 'active' : ''}`}>♥</span>)}</div>; }
-function formatDate(value) { try { return new Intl.DateTimeFormat('en', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(value)); } catch { return ''; } }
-function displayNameForVote(vote) { return vote.username?.trim() || 'Anonymous supporter'; }
-function selectedTitlesForVote(vote, options = DEFAULT_OPTIONS) { return (vote.selected_titles?.length ? vote.selected_titles : vote.selected_ids?.map((id) => optionById(options, id)?.title || id) || []).join(', '); }
 
 function VotePage() {
-  const defaultDashboard = useMemo(() => normalizeDashboardConfig(), []);
-  const [dashboardConfig, setDashboardConfig] = useState(defaultDashboard);
-  const [selected, setSelected] = useState([]);
-  const [username, setUsername] = useState('');
-  const [note, setNote] = useState('');
+  const countdown = useCountdown();
+  const [character, setCharacter] = useState('');
+  const [setting, setSetting] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [status, setStatus] = useState('idle');
   const [error, setError] = useState('');
-  const lockedData = useMemo(() => { try { return JSON.parse(localStorage.getItem(LOCK_KEY) || 'null'); } catch { return null; } }, [status]);
-  const isLocked = Boolean(lockedData?.submittedAt);
-  const options = normalizeOptions(dashboardConfig.options);
 
-  async function loadVoteConfig() {
-    if (!supabase) return;
-    const { data } = await supabase.from('portfolio_settings').select('value').eq('key', DASHBOARD_SETTINGS_KEY).maybeSingle();
-    setDashboardConfig(normalizeDashboardConfig(data?.value));
-  }
+  const canSubmit = countdown.active
+    && character.trim().length >= 2
+    && setting.trim().length >= 2
+    && !submitting;
 
-  useEffect(() => { loadVoteConfig(); }, []);
+  async function submitWishlist(event) {
+    event.preventDefault();
+    if (!canSubmit) return;
 
-  function toggleVote(id) {
-    if (isLocked || submitting || status === 'paused') return;
-    setSelected((current) => {
-      if (current.includes(id)) return current.filter((item) => item !== id);
-      if (current.length >= MAX_VOTES) return current;
-      return [...current, id];
-    });
-  }
-
-  async function submitVote() {
-    if (!supabase) { setError('Supabase is not configured.'); setStatus('paused'); return; }
-    if (selected.length === 0 || submitting || isLocked) return;
-    setSubmitting(true); setError(''); setStatus('idle');
-    const selectedTitles = selected.map((id) => optionById(options, id)?.title || id);
-    const basePayload = { selected_ids: selected, selected_titles: selectedTitles, note: note.trim() || null };
-    const usernamePayload = { ...basePayload, username: username.trim() || null };
-    let { error: insertError } = await supabase.from('wishlist_votes').insert(usernamePayload);
-    if (insertError && isMissingUsernameColumn(insertError)) {
-      const fallback = await supabase.from('wishlist_votes').insert(basePayload);
-      insertError = fallback.error;
+    if (!supabase) {
+      setError('Wishlist connection is temporarily unavailable.');
+      setStatus('error');
+      return;
     }
-    if (insertError) { setError(insertError.message || 'Vote insert failed'); setStatus('paused'); setSubmitting(false); return; }
-    localStorage.setItem(LOCK_KEY, JSON.stringify({ submittedAt: new Date().toISOString(), selected, selectedTitles }));
-    setStatus('saved'); setSubmitting(false);
+
+    setSubmitting(true);
+    setError('');
+    setStatus('idle');
+
+    const cleanCharacter = character.trim();
+    const cleanSetting = setting.trim();
+    const settingSlug = slugify(cleanSetting) || 'custom';
+
+    const { error: insertError } = await supabase.from('wishlist_votes').insert({
+      selected_ids: [`${CAMPAIGN_PREFIX}${settingSlug}`],
+      selected_titles: [cleanCharacter],
+      note: cleanSetting,
+      username: null,
+    });
+
+    if (insertError) {
+      setError(insertError.message || 'Could not save your wishlist idea.');
+      setStatus('error');
+      setSubmitting(false);
+      return;
+    }
+
+    setCharacter('');
+    setSetting('');
+    setStatus('saved');
+    setSubmitting(false);
   }
 
-  const formBlock = !isLocked ? <section className="formRow enhanced"><label><span>Display name / username</span><input value={username} maxLength={40} disabled={submitting || status === 'paused' || options.length === 0} onChange={(event) => setUsername(event.target.value)} placeholder="Optional — leave empty to stay anonymous" /></label><label><span>Message or wishlist note</span><textarea value={note} disabled={submitting || status === 'paused' || options.length === 0} onChange={(event) => setNote(event.target.value)} placeholder="Optional: write another character, series, benefit, file feature, or Patreon improvement..." /></label><button className="submit" disabled={selected.length === 0 || submitting || status === 'paused' || options.length === 0} onClick={submitVote}>{submitting ? 'Saving...' : 'Submit vote'}</button></section> : null;
+  return (
+    <Shell>
+      <BrandBar mode="vote" />
 
-  return <Shell><section className="hero"><div><div className="pill">Patreon wishlist vote</div><h1>WHAT SHOULD WE SCULPT NEXT?</h1><p>Vote for up to 3 characters you would like to see as future multipart 3D printable models.</p></div><div className="voteBox"><span>{isLocked ? 'Vote saved' : 'Votes selected'}</span><strong>{isLocked ? `${lockedData.selected?.length || 0}/${MAX_VOTES}` : `${selected.length}/${MAX_VOTES}`}</strong><Hearts count={isLocked ? lockedData.selected?.length || 0 : selected.length} /></div></section>{isLocked ? <section className="notice success"><strong>Your vote has been saved.</strong><span>Thanks for helping shape the next release. This browser is now locked for voting.</span><a href={resultsUrl} onClick={goToResults}>View live results</a></section> : null}{status === 'paused' ? <section className="notice warning"><strong>Voting is temporarily paused.</strong><span>Please check back soon. {error}</span></section> : null}{options.length === 0 ? <section className="notice warning"><strong>No voting characters are listed right now.</strong><span>Please check back soon.</span></section> : null}{formBlock}<section className="grid">{options.map((option) => { const picked = selected.includes(option.id) || lockedData?.selected?.includes(option.id); const disabled = isLocked || submitting || status === 'paused' || (!picked && selected.length >= MAX_VOTES); return <button key={option.id} type="button" disabled={disabled} className={`card ${picked ? 'picked' : ''}`} onClick={() => toggleVote(option.id)}><span className="line" /><span className="category">{option.category}</span><strong>{option.title}</strong><small>{option.subtitle}</small><span className="cardFooter"><b>{picked ? 'SELECTED' : isLocked ? 'LOCKED' : 'VOTE'}</b><i>{picked ? '♥' : '♡'}</i></span></button>; })}</section><DebugPanel error={error} /></Shell>;
+      <section className="campaignHero">
+        <div className="heroCopy">
+          <div className="eyebrow"><span className="liveDot" /> 24 HOURS ONLY</div>
+          <h1>BUILD THE NEXT WISHLIST.</h1>
+          <p>
+            Tell us the character you want and the setting you want to see them in.
+            We are collecting wishlist ideas for one day only.
+          </p>
+        </div>
+        <Countdown />
+      </section>
+
+      <form className="wishlistForm" onSubmit={submitWishlist}>
+        <div className="fieldBlock">
+          <label htmlFor="character">Character</label>
+          <input
+            id="character"
+            value={character}
+            onChange={(event) => setCharacter(event.target.value)}
+            maxLength={90}
+            autoComplete="off"
+            placeholder="e.g. Spawn, Wonder Woman, Akuma..."
+            disabled={!countdown.active || submitting}
+          />
+          <small>Write the exact character you want us to consider.</small>
+        </div>
+
+        <div className="fieldBlock">
+          <label htmlFor="setting">Setting / concept</label>
+          <textarea
+            id="setting"
+            value={setting}
+            onChange={(event) => setSetting(event.target.value)}
+            maxLength={180}
+            placeholder="e.g. rain-soaked urban rooftop, 90s mob boss, wild west..."
+            disabled={!countdown.active || submitting}
+          />
+          <small>Describe the world, outfit direction, mood, era, or theme.</small>
+        </div>
+
+        <details className="recommendations">
+          <summary>
+            <span>
+              <b>Recommendations</b>
+              <small>Need a direction? Open style ideas.</small>
+            </span>
+            <i>+</i>
+          </summary>
+          <div className="recommendationBody">
+            <p>Pick one as a starting point. You can still edit the setting afterwards.</p>
+            <div className="recommendationChips">
+              {SETTING_RECOMMENDATIONS.map((item) => (
+                <button
+                  type="button"
+                  key={item}
+                  className={setting.toLowerCase() === item.toLowerCase() ? 'selected' : ''}
+                  onClick={() => setSetting(item)}
+                  disabled={!countdown.active || submitting}
+                >
+                  {item}
+                </button>
+              ))}
+            </div>
+          </div>
+        </details>
+
+        {status === 'saved' ? (
+          <div className="formNotice success">
+            <strong>Added to the wishlist.</strong>
+            <span>You can submit another character + setting while the 24-hour window is open.</span>
+          </div>
+        ) : null}
+
+        {status === 'error' ? (
+          <div className="formNotice error">
+            <strong>Could not submit.</strong>
+            <span>{error}</span>
+          </div>
+        ) : null}
+
+        {!countdown.active ? (
+          <div className="formNotice closed">
+            <strong>The 24-hour wishlist window is closed.</strong>
+            <span>You can still view everything collected on the live page.</span>
+          </div>
+        ) : null}
+
+        <div className="submitRow">
+          <button className="submitButton" type="submit" disabled={!canSubmit}>
+            {submitting ? 'Adding...' : 'Add to Wishlist'}
+          </button>
+          <a className="secondaryLink" href={liveUrl}>Watch the live wishlist →</a>
+        </div>
+      </form>
+    </Shell>
+  );
 }
 
-function ModelsInDevelopment({ sections = DEFAULT_MODEL_SECTIONS }) {
-  const normalizedSections = normalizeDashboardSections(sections);
-  return <section className="developmentPanel" aria-label="Model status"><div className="developmentEyebrow">Model status</div><div className="developmentSections">{normalizedSections.map((section) => <div className="developmentSection" key={section.id}><div className="developmentSectionTitle">{section.title}</div><div className="developmentList">{section.items.map((model, index) => <div className="developmentItem" key={`${section.id}-${model.model_name || model}-${index}`}><strong>{typeof model === 'string' ? model : [model.model_name, model.status].filter(Boolean).join(' ')}</strong></div>)}</div></div>)}</div><div className="developmentAuthor">CYBERPOP3D</div></section>;
+function wishlistEntryFromVote(vote) {
+  const selectedIds = Array.isArray(vote?.selected_ids) ? vote.selected_ids : [];
+  const marker = selectedIds.find((id) => String(id || '').startsWith(CAMPAIGN_PREFIX));
+  if (!marker) return null;
+
+  const createdAt = new Date(vote.created_at);
+  if (Number.isNaN(createdAt.getTime()) || createdAt < CAMPAIGN_START) return null;
+
+  const character = Array.isArray(vote.selected_titles)
+    ? String(vote.selected_titles[0] || '').trim()
+    : '';
+  const setting = String(vote.note || '').trim();
+
+  if (!character || !setting) return null;
+
+  return {
+    id: vote.id,
+    character,
+    setting,
+    createdAt,
+  };
 }
 
-function PublicMessages({ messages = [], options = DEFAULT_OPTIONS }) {
-  const [openId, setOpenId] = useState(null);
-  return <section className="messagesPanel"><div className="messagesHeader"><div><span>Community archive</span><h3>Messages from you</h3></div><p>{messages.length ? `${messages.length} written message${messages.length === 1 ? '' : 's'} from voters.` : 'Written messages will appear here as voters leave notes.'}</p></div>{messages.length ? <div className="messageList">{messages.map((vote) => { const open = openId === vote.id; return <article className={`messageCard ${open ? 'open' : ''}`} key={vote.id}><button type="button" onClick={() => setOpenId(open ? null : vote.id)}><span><strong>{displayNameForVote(vote)}</strong><small>{formatDate(vote.created_at)}</small></span><b>{open ? 'Close' : 'Read'}</b></button>{open ? <div className="messageBody"><p>{vote.note}</p><small>Selected: {selectedTitlesForVote(vote, options)}</small></div> : null}</article>; })}</div> : <div className="messageEmpty">No written messages yet.</div>}</section>;
+function formatSubmittedTime(value) {
+  try {
+    return new Intl.DateTimeFormat('en', {
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    }).format(value);
+  } catch {
+    return '';
+  }
 }
 
-function ResultsPage() {
-  const defaultDashboard = normalizeDashboardConfig();
-  const [rows, setRows] = useState(buildResultRows([], defaultDashboard));
-  const [modelSections, setModelSections] = useState(defaultDashboard.sections);
-  const [resultOptions, setResultOptions] = useState(defaultDashboard.options);
-  const [messages, setMessages] = useState([]);
+function LivePage() {
+  const [entries, setEntries] = useState([]);
   const [status, setStatus] = useState('loading');
-  const [error, setError] = useState('');
 
-  async function loadResults() {
-    if (!supabase) { setError('Supabase is not configured.'); setStatus('error'); return; }
-    const [{ data, error: fetchError }, { data: dashboardRow, error: dashboardError }, archiveResponse] = await Promise.all([
-      supabase.from('wishlist_vote_counts').select('option_id, votes'),
-      supabase.from('portfolio_settings').select('value').eq('key', DASHBOARD_SETTINGS_KEY).maybeSingle(),
-      fetch('/api/live-dashboard').then((r) => r.ok ? r.json() : null).catch(() => null),
-    ]);
-    if (fetchError) { setError(fetchError.message || 'Results fetch failed'); setStatus('error'); return; }
-    const dashboardConfig = normalizeDashboardConfig(dashboardError ? null : dashboardRow?.value);
-    setRows(buildResultRows(data || [], dashboardConfig));
-    setModelSections(dashboardConfig.sections);
-    setResultOptions(dashboardConfig.options);
-    setMessages((archiveResponse?.writtenNotes || []).filter((vote) => vote.note).slice(0, 40));
-    setError(''); setStatus('ready');
+  async function loadWishlist() {
+    try {
+      const response = await fetch('/api/live-dashboard', { cache: 'no-store' });
+      if (!response.ok) throw new Error('Live wishlist fetch failed');
+      const data = await response.json();
+      const nextEntries = (data.voteArchive || [])
+        .map(wishlistEntryFromVote)
+        .filter(Boolean)
+        .sort((a, b) => b.createdAt - a.createdAt);
+
+      setEntries(nextEntries);
+      setStatus('ready');
+    } catch {
+      setStatus('error');
+    }
   }
 
-  useEffect(() => { loadResults(); const interval = window.setInterval(loadResults, 20000); return () => window.clearInterval(interval); }, []);
-  const totalVotes = rows.reduce((sum, row) => sum + row.votes, 0);
-  const topThree = rows.slice(0, 3);
-  const leader = rows[0];
+  useEffect(() => {
+    loadWishlist();
+    const timer = window.setInterval(loadWishlist, 10000);
+    return () => window.clearInterval(timer);
+  }, []);
 
-  return <Shell><section className="resultsHero"><div><div className="pill live"><span /> LIVE VOTE RESULTS</div><h1>{leader?.votes > 0 ? `${leader.title} IS LEADING` : 'CURRENT LEADING CHARACTER'}</h1><p>Live results refresh automatically.</p></div><a className="voteLink" href={voteUrl} onClick={goToVote}>VOTE NOW</a></section>{status === 'error' ? <section className="notice warning"><strong>Live results are temporarily unavailable.</strong><span>Please check back soon.</span></section> : null}<section className="leaderCard"><span>Winning right now</span><h2>{leader?.votes > 0 ? leader.title : 'No votes yet'}</h2><p>{leader?.votes > 0 ? leader.subtitle : 'Be the first to vote.'}</p><strong>{leader?.votes || 0} votes · {leader?.percent || 0}%</strong></section><section className="resultsLayout"><div className="topThree"><h3>Top 3</h3>{topThree.map((row, index) => <div className="rankCard" key={row.id}><span className="rank">#{index + 1}</span><div className="rankMain"><strong>{row.title}</strong><small>{row.subtitle}</small><div className="bar"><span style={{ width: `${row.percent}%` }} /></div></div><b>{row.votes} votes · {row.percent}%</b></div>)}</div><aside className="distribution"><h3>All options</h3><p>{totalVotes} total votes</p>{rows.map((row) => <div className="miniRow" key={row.id}><span>{row.title}</span><b>{row.votes} · {row.percent}%</b></div>)}</aside></section><ModelsInDevelopment sections={modelSections} /><PublicMessages messages={messages} options={resultOptions} /><DebugPanel error={error} /></Shell>;
+  const uniqueCharacters = useMemo(
+    () => new Set(entries.map((entry) => entry.character.toLowerCase())).size,
+    [entries],
+  );
+
+  return (
+    <Shell>
+      <BrandBar mode="live" />
+
+      <section className="campaignHero liveHero">
+        <div className="heroCopy">
+          <div className="eyebrow"><span className="liveDot" /> LIVE WISHLIST</div>
+          <h1>ONE DAY. YOUR IDEAS.</h1>
+          <p>
+            Every character + setting submitted during this 24-hour wishlist window appears here.
+            The feed refreshes automatically.
+          </p>
+        </div>
+        <Countdown />
+      </section>
+
+      <section className="liveStats">
+        <div>
+          <span>Wishlist ideas</span>
+          <strong>{entries.length}</strong>
+        </div>
+        <div>
+          <span>Unique characters</span>
+          <strong>{uniqueCharacters}</strong>
+        </div>
+        <a href={voteUrl}>Submit yours →</a>
+      </section>
+
+      {status === 'error' ? (
+        <div className="formNotice error liveError">
+          <strong>Live feed is temporarily unavailable.</strong>
+          <span>Please refresh the page shortly.</span>
+        </div>
+      ) : null}
+
+      <section className="wishlistFeed" aria-live="polite">
+        <div className="feedHeader">
+          <div>
+            <span>Community wishlist</span>
+            <h2>Latest ideas</h2>
+          </div>
+          <p>{status === 'loading' ? 'Loading…' : 'Newest submissions appear first.'}</p>
+        </div>
+
+        {status !== 'loading' && entries.length === 0 ? (
+          <div className="emptyState">
+            <strong>No ideas yet.</strong>
+            <span>Be the first to add a character and setting.</span>
+            <a href={voteUrl}>Add the first wishlist idea</a>
+          </div>
+        ) : null}
+
+        <div className="wishGrid">
+          {entries.map((entry, index) => (
+            <article className="wishCard" key={entry.id}>
+              <div className="wishIndex">{String(entries.length - index).padStart(2, '0')}</div>
+              <div className="wishMain">
+                <span>Character</span>
+                <h3>{entry.character}</h3>
+                <span>Setting</span>
+                <p>{entry.setting}</p>
+              </div>
+              <time>{formatSubmittedTime(entry.createdAt)}</time>
+            </article>
+          ))}
+        </div>
+      </section>
+    </Shell>
+  );
 }
 
-function App() { return isVoteRoute ? <VotePage /> : <ResultsPage />; }
+function App() {
+  return isVoteRoute ? <VotePage /> : <LivePage />;
+}
+
 createRoot(document.getElementById('root')).render(<App />);
