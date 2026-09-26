@@ -1367,88 +1367,94 @@ h1 {
 }
 
 
-/* Magical upvote feedback */
-.wishItemActions {
-  position: relative;
-  display: inline-block;
-  overflow: visible;
-}
 
-.wishVoteButton.sparkled {
-  animation: upvoteGlowPulse .72s cubic-bezier(.2,.8,.2,1);
-}
 
-.sparkleBurst {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  width: 1px;
-  height: 1px;
-  z-index: 6;
+/* Subtle click-position magic feedback */
+.magicClickFx {
+  position: fixed;
+  z-index: 500;
+  width: 0;
+  height: 0;
   pointer-events: none;
+  transform: translate(-50%, -50%);
 }
 
-.sparkleBurst i {
-  --x: 0px;
-  --y: -34px;
-  --delay: 0ms;
+.magicClickFx::before {
+  content: "";
+  position: absolute;
+  left: -24px;
+  top: -24px;
+  width: 48px;
+  height: 48px;
+  border-radius: 999px;
+  background: radial-gradient(
+    circle,
+    rgba(255,255,255,.16) 0%,
+    rgba(235,235,255,.08) 34%,
+    rgba(255,255,255,0) 72%
+  );
+  filter: blur(2px);
+  animation: magicHazeFade .62s ease-out forwards;
+}
+
+.magicSpark {
   position: absolute;
   left: 0;
   top: 0;
-  color: #fff;
+  color: rgba(255,255,255,.9);
   font-style: normal;
-  font-size: 10px;
   line-height: 1;
   opacity: 0;
-  filter: drop-shadow(0 0 5px rgba(255,255,255,.9));
-  animation: sparklePop .72s cubic-bezier(.15,.75,.2,1) var(--delay) forwards;
+  text-shadow:
+    0 0 5px rgba(255,255,255,.42),
+    0 0 10px rgba(224,224,255,.18);
+  animation: magicSoftFade .62s ease-out forwards;
 }
 
-.sparkleBurst i:nth-child(1) { --x: -48px; --y: -18px; --delay: 0ms; font-size: 8px; }
-.sparkleBurst i:nth-child(2) { --x: -30px; --y: -38px; --delay: 35ms; font-size: 12px; }
-.sparkleBurst i:nth-child(3) { --x: -4px;  --y: -46px; --delay: 12ms; font-size: 9px; }
-.sparkleBurst i:nth-child(4) { --x: 30px;  --y: -36px; --delay: 48ms; font-size: 11px; }
-.sparkleBurst i:nth-child(5) { --x: 50px;  --y: -12px; --delay: 18ms; font-size: 8px; }
-.sparkleBurst i:nth-child(6) { --x: 42px;  --y: 22px;  --delay: 62ms; font-size: 10px; }
-.sparkleBurst i:nth-child(7) { --x: 10px;  --y: 34px;  --delay: 28ms; font-size: 8px; }
-.sparkleBurst i:nth-child(8) { --x: -30px; --y: 28px;  --delay: 54ms; font-size: 11px; }
-.sparkleBurst i:nth-child(9) { --x: -52px; --y: 10px;  --delay: 22ms; font-size: 7px; }
+.magicSpark1 { margin: -19px 0 0 -12px; font-size: 10px; animation-delay: 0ms; }
+.magicSpark2 { margin: -12px 0 0 14px; font-size: 8px; animation-delay: 45ms; }
+.magicSpark3 { margin: 8px 0 0 18px; font-size: 12px; animation-delay: 20ms; }
+.magicSpark4 { margin: 15px 0 0 -9px; font-size: 8px; animation-delay: 65ms; }
+.magicSpark5 { margin: 3px 0 0 -20px; font-size: 10px; animation-delay: 30ms; }
+.magicSpark6 { margin: -3px 0 0 1px; font-size: 7px; animation-delay: 85ms; }
 
-@keyframes sparklePop {
+@keyframes magicSoftFade {
   0% {
     opacity: 0;
-    transform: translate(-50%, -50%) translate(0, 0) scale(.15) rotate(0deg);
+    transform: scale(.35) rotate(-8deg);
   }
   24% {
-    opacity: 1;
+    opacity: .78;
+    transform: scale(1) rotate(0deg);
   }
-  72% {
-    opacity: .9;
+  58% {
+    opacity: .48;
+    transform: scale(.92) rotate(5deg);
   }
   100% {
     opacity: 0;
-    transform: translate(-50%, -50%) translate(var(--x), var(--y)) scale(1.25) rotate(70deg);
+    transform: scale(.72) rotate(9deg);
   }
 }
 
-@keyframes upvoteGlowPulse {
+@keyframes magicHazeFade {
   0% {
-    box-shadow: 0 0 0 rgba(255,255,255,0);
+    opacity: 0;
+    transform: scale(.58);
   }
-  34% {
-    transform: translateY(-1px) scale(1.035);
-    box-shadow:
-      0 0 18px rgba(255,255,255,.34),
-      0 0 36px rgba(255,255,255,.12);
+  28% {
+    opacity: 1;
+    transform: scale(1);
   }
   100% {
-    box-shadow: 0 0 0 rgba(255,255,255,0);
+    opacity: 0;
+    transform: scale(1.16);
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .wishVoteButton.sparkled,
-  .sparkleBurst i {
+  .magicClickFx::before,
+  .magicSpark {
     animation-duration: .01ms;
   }
 }
