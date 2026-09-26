@@ -12,6 +12,7 @@ const supabase = SUPABASE_URL && SUPABASE_ANON_KEY
 const CAMPAIGN_START = new Date('2026-09-26T19:43:00Z');
 const CAMPAIGN_END = new Date('2026-10-03T19:43:00Z');
 const CAMPAIGN_PREFIX = 'wishlist-24h-2026-09-26:';
+const OWNER_USERNAME = 'cyberpop3d';
 
 const SETTING_RECOMMENDATIONS = [
   'Urban Style',
@@ -107,7 +108,10 @@ function VotePage() {
 
 
   const cleanUsername = username.trim().replace(/^@+/, '');
-  const canSaveUsername = usernameDraft.trim().replace(/^@+/, '').length >= 2;
+  const normalizedUsernameDraft = usernameDraft.trim().replace(/^@+/, '').toLowerCase();
+  const reservedUsername = normalizedUsernameDraft === OWNER_USERNAME;
+  const canSaveUsername = usernameDraft.trim().replace(/^@+/, '').length >= 2
+    && !reservedUsername;
   const canSubmitWishes = countdown.active
     && cleanUsername.length >= 2
     && wishes.some((wish) => wish.trim().length >= 2)
@@ -117,6 +121,10 @@ function VotePage() {
     event.preventDefault();
     const nextUsername = usernameDraft.trim().replace(/^@+/, '');
     if (nextUsername.length < 2) return;
+    if (nextUsername.toLowerCase() === OWNER_USERNAME) {
+      setError('@cyberpop3d is reserved.');
+      return;
+    }
     setUsername(nextUsername);
     setUsernameDraft(nextUsername);
     setEditingUsername(false);
@@ -220,12 +228,18 @@ function VotePage() {
               <input
                 autoFocus
                 value={usernameDraft}
-                onChange={(event) => setUsernameDraft(event.target.value)}
+                onChange={(event) => {
+                  setUsernameDraft(event.target.value);
+                  setError('');
+                }}
                 placeholder="username"
                 autoComplete="off"
                 maxLength={60}
               />
             </div>
+            {reservedUsername ? (
+              <p className="portalInlineError">@cyberpop3d is reserved.</p>
+            ) : null}
             <button className="conversationNext" type="submit" disabled={!canSaveUsername}>
               Continue
             </button>
@@ -394,7 +408,7 @@ function LivePage() {
     entries.forEach((entry) => {
       const username = entry.username || 'Anonymous';
       const key = entry.username
-        ? entry.username.toLowerCase()
+        ? entry.username.replace(/^@+/, '').toLowerCase()
         : 'anonymous-' + String(entry.id);
 
       if (!grouped.has(key)) {
@@ -412,6 +426,7 @@ function LivePage() {
   }, [entries]);
 
   const selectedGroup = userGroups.find((group) => group.key === selectedUserKey) || null;
+  const selectedGroupIsOwner = selectedGroup?.key === OWNER_USERNAME;
 
   async function handleUpvote(voteId, event) {
     if (!voteId || pendingUpvotes[voteId]) return;
@@ -486,23 +501,26 @@ function LivePage() {
             );
             const displayUsername = group.username === 'Anonymous'
               ? 'Anonymous'
-              : '@' + group.username.replace(/^@/, '');
+              : '@' + group.username.replace(/^@+/, '');
+            const isOwnerGroup = group.key === OWNER_USERNAME;
 
             return (
-              <div className="envelopeEntry" key={group.key}>
+              <div className={`envelopeEntry ${isOwnerGroup ? 'ownerEnvelopeEntry' : ''}`} key={group.key}>
                 <button
-                  className="envelopeButton"
+                  className={`envelopeButton ${isOwnerGroup ? 'ownerEnvelopeButton' : ''}`}
                   type="button"
                   onClick={() => setSelectedUserKey(group.key)}
                   aria-label={'Open wishes from ' + group.username}
                 >
-                  <span
-                    className="envelopeVoteCount"
-                    aria-label={totalUpvotes + ' total upvotes'}
-                  >
-                    <span aria-hidden="true">↑</span>
-                    <strong>{totalUpvotes}</strong>
-                  </span>
+                  {!isOwnerGroup ? (
+                    <span
+                      className="envelopeVoteCount"
+                      aria-label={totalUpvotes + ' total upvotes'}
+                    >
+                      <span aria-hidden="true">↑</span>
+                      <strong>{totalUpvotes}</strong>
+                    </span>
+                  ) : null}
                   <EnvelopeIcon />
                 </button>
                 <span className="envelopeUsername">{displayUsername}</span>
@@ -520,7 +538,12 @@ function LivePage() {
             if (event.target === event.currentTarget) setSelectedUserKey('');
           }}
         >
-          <section className="wishLetter" role="dialog" aria-modal="true" aria-label="Wishlist details">
+          <section
+            className={`wishLetter ${selectedGroupIsOwner ? 'ownerWishLetter' : ''}`}
+            role="dialog"
+            aria-modal="true"
+            aria-label="Wishlist details"
+          >
             <button
               className="wishClose"
               type="button"
@@ -531,35 +554,42 @@ function LivePage() {
             </button>
 
             <div className="wishAuthor">
-              <span>WISHES FROM</span>
-              <strong>{selectedGroup.username === 'Anonymous' ? 'Anonymous' : '@' + selectedGroup.username.replace(/^@/, '')}</strong>
+              <span>{selectedGroupIsOwner ? 'ABOUT THE WISHLIST' : 'WISHES FROM'}</span>
+              <strong>{selectedGroup.username === 'Anonymous' ? 'Anonymous' : '@' + selectedGroup.username.replace(/^@+/, '')}</strong>
             </div>
 
-            <div className="wishList">
-              {selectedGroup.wishes.map((wish, index) => (
-                <article className="wishItem" key={wish.id}>
-                  <span>{String(index + 1).padStart(2, '0')}</span>
-                  <h2>{wish.character}</h2>
-                  {wish.setting ? <p>{wish.setting}</p> : null}
-                  <div className="wishItemActions">
-                    <button
-                      className={`wishVoteButton ${wish.viewerUpvoted ? 'voted' : ''}`}
-                      type="button"
-                      onClick={(event) => handleUpvote(wish.id, event)}
-                      disabled={!!pendingUpvotes[wish.id]}
-                      aria-pressed={wish.viewerUpvoted}
-                      aria-label={wish.viewerUpvoted
-                        ? `Remove upvote from ${wish.character}`
-                        : `Upvote ${wish.character}`}
-                    >
-                      <span aria-hidden="true">{wish.viewerUpvoted ? '✓' : '↑'}</span>
-                      <span>{wish.viewerUpvoted ? 'UPVOTED' : 'UPVOTE'}</span>
-                      <strong>{wish.upvotes || 0}</strong>
-                    </button>
-                  </div>
-                </article>
-              ))}
-            </div>
+            {selectedGroupIsOwner ? (
+              <div className="ownerNotice">
+                <p>Share proposals and support the ideas you like by upvoting them.</p>
+                <p>We will consider each idea, including the ones with 0 upvotes, so don't worry.</p>
+              </div>
+            ) : (
+              <div className="wishList">
+                {selectedGroup.wishes.map((wish, index) => (
+                  <article className="wishItem" key={wish.id}>
+                    <span>{String(index + 1).padStart(2, '0')}</span>
+                    <h2>{wish.character}</h2>
+                    {wish.setting ? <p>{wish.setting}</p> : null}
+                    <div className="wishItemActions">
+                      <button
+                        className={`wishVoteButton ${wish.viewerUpvoted ? 'voted' : ''}`}
+                        type="button"
+                        onClick={(event) => handleUpvote(wish.id, event)}
+                        disabled={!!pendingUpvotes[wish.id]}
+                        aria-pressed={wish.viewerUpvoted}
+                        aria-label={wish.viewerUpvoted
+                          ? `Remove upvote from ${wish.character}`
+                          : `Upvote ${wish.character}`}
+                      >
+                        <span aria-hidden="true">{wish.viewerUpvoted ? '✓' : '↑'}</span>
+                        <span>{wish.viewerUpvoted ? 'UPVOTED' : 'UPVOTE'}</span>
+                        <strong>{wish.upvotes || 0}</strong>
+                      </button>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            )}
           </section>
         </div>
       ) : null}
