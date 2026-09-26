@@ -14,6 +14,99 @@ const CAMPAIGN_END = new Date('2026-10-03T19:43:00Z');
 const CAMPAIGN_PREFIX = 'wishlist-24h-2026-09-26:';
 const OWNER_USERNAME = 'cyberpop3d';
 
+const LIVE_LANGUAGES = [
+  { code: 'en', label: 'English' },
+  { code: 'pt', label: 'Português' },
+  { code: 'es', label: 'Español' },
+  { code: 'fr', label: 'Français' },
+  { code: 'de', label: 'Deutsch' },
+  { code: 'it', label: 'Italiano' },
+];
+
+const LIVE_COPY = {
+  en: {
+    wishlist: 'WISHLIST',
+    closed: 'WISHLIST CLOSED',
+    closesIn: 'CLOSES IN',
+    wishesFrom: 'WISHES FROM',
+    aboutWishlist: 'ABOUT THE WISHLIST',
+    upvote: 'UPVOTE',
+    upvoted: 'UPVOTED',
+    language: 'LANGUAGE',
+    ownerLine1: 'Share proposals and support the ideas you like by upvoting them.',
+    ownerLine2: "We will consider each idea, including the ones with 0 upvotes, so don't worry.",
+  },
+  pt: {
+    wishlist: 'LISTA DE DESEJOS',
+    closed: 'LISTA ENCERRADA',
+    closesIn: 'TERMINA EM',
+    wishesFrom: 'IDEIAS DE',
+    aboutWishlist: 'SOBRE A LISTA',
+    upvote: 'VOTAR',
+    upvoted: 'VOTADO',
+    language: 'IDIOMA',
+    ownerLine1: 'Compartilhe propostas e apoie as ideias que você gosta votando nelas.',
+    ownerLine2: 'Vamos considerar todas as ideias, inclusive as que tiverem 0 votos, então não se preocupe.',
+  },
+  es: {
+    wishlist: 'LISTA DE DESEOS',
+    closed: 'LISTA CERRADA',
+    closesIn: 'CIERRA EN',
+    wishesFrom: 'IDEAS DE',
+    aboutWishlist: 'SOBRE LA LISTA',
+    upvote: 'VOTAR',
+    upvoted: 'VOTADO',
+    language: 'IDIOMA',
+    ownerLine1: 'Comparte propuestas y apoya las ideas que te gusten votándolas.',
+    ownerLine2: 'Tendremos en cuenta todas las ideas, incluidas las que tengan 0 votos, así que no te preocupes.',
+  },
+  fr: {
+    wishlist: 'LISTE DE SOUHAITS',
+    closed: 'LISTE FERMÉE',
+    closesIn: 'SE TERMINE DANS',
+    wishesFrom: 'IDÉES DE',
+    aboutWishlist: 'À PROPOS DE LA LISTE',
+    upvote: 'VOTER',
+    upvoted: 'VOTÉ',
+    language: 'LANGUE',
+    ownerLine1: 'Partagez vos propositions et soutenez les idées que vous aimez en votant pour elles.',
+    ownerLine2: 'Nous examinerons chaque idée, y compris celles avec 0 vote, alors ne vous inquiétez pas.',
+  },
+  de: {
+    wishlist: 'WUNSCHLISTE',
+    closed: 'WUNSCHLISTE GESCHLOSSEN',
+    closesIn: 'ENDET IN',
+    wishesFrom: 'IDEEN VON',
+    aboutWishlist: 'ÜBER DIE WUNSCHLISTE',
+    upvote: 'UPVOTE',
+    upvoted: 'GEVOTET',
+    language: 'SPRACHE',
+    ownerLine1: 'Teile Vorschläge und unterstütze Ideen, die dir gefallen, mit einem Upvote.',
+    ownerLine2: 'Wir berücksichtigen jede Idee, auch solche mit 0 Upvotes, also keine Sorge.',
+  },
+  it: {
+    wishlist: 'LISTA DEI DESIDERI',
+    closed: 'LISTA CHIUSA',
+    closesIn: 'CHIUDE TRA',
+    wishesFrom: 'IDEE DI',
+    aboutWishlist: 'SULLA LISTA',
+    upvote: 'VOTA',
+    upvoted: 'VOTATO',
+    language: 'LINGUA',
+    ownerLine1: 'Condividi le tue proposte e sostieni le idee che ti piacciono votandole.',
+    ownerLine2: 'Prenderemo in considerazione ogni idea, comprese quelle con 0 voti, quindi non preoccuparti.',
+  },
+};
+
+function getStoredLiveLanguage() {
+  try {
+    const stored = window.localStorage.getItem('yontuk-live-language');
+    return LIVE_LANGUAGES.some((language) => language.code === stored) ? stored : 'en';
+  } catch {
+    return 'en';
+  }
+}
+
 const SETTING_RECOMMENDATIONS = [
   'Urban Style',
   'Mob Boss Style',
@@ -375,6 +468,11 @@ function LivePage() {
   const [selectedUserKey, setSelectedUserKey] = useState('');
   const [pendingUpvotes, setPendingUpvotes] = useState({});
   const [magicFx, setMagicFx] = useState(null);
+  const [liveLanguage, setLiveLanguage] = useState(getStoredLiveLanguage);
+  const [languageOpen, setLanguageOpen] = useState(false);
+  const [translations, setTranslations] = useState({});
+  const [translatingGroupKey, setTranslatingGroupKey] = useState('');
+  const copy = LIVE_COPY[liveLanguage] || LIVE_COPY.en;
 
   async function loadWishlist() {
     try {
@@ -427,6 +525,83 @@ function LivePage() {
 
   const selectedGroup = userGroups.find((group) => group.key === selectedUserKey) || null;
   const selectedGroupIsOwner = selectedGroup?.key === OWNER_USERNAME;
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem('yontuk-live-language', liveLanguage);
+    } catch {
+      // Language preference still works for the current visit.
+    }
+  }, [liveLanguage]);
+
+  useEffect(() => {
+    if (!selectedGroup || selectedGroupIsOwner || liveLanguage === 'en') {
+      setTranslatingGroupKey('');
+      return undefined;
+    }
+
+    const missingWishes = selectedGroup.wishes.filter((wish) => (
+      !translations[`${liveLanguage}:${wish.id}:character`]
+      || (wish.setting && !translations[`${liveLanguage}:${wish.id}:setting`])
+    ));
+
+    if (!missingWishes.length) {
+      setTranslatingGroupKey('');
+      return undefined;
+    }
+
+    let cancelled = false;
+    setTranslatingGroupKey(selectedGroup.key);
+
+    const textPlan = [];
+    missingWishes.forEach((wish) => {
+      textPlan.push({
+        key: `${liveLanguage}:${wish.id}:character`,
+        text: wish.character,
+      });
+      if (wish.setting) {
+        textPlan.push({
+          key: `${liveLanguage}:${wish.id}:setting`,
+          text: wish.setting,
+        });
+      }
+    });
+
+    fetch('/api/translate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        target: liveLanguage,
+        texts: textPlan.map((item) => item.text),
+      }),
+    })
+      .then(async (response) => {
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || 'Translation failed');
+        if (cancelled) return;
+
+        const next = {};
+        textPlan.forEach((item, index) => {
+          next[item.key] = String(data.translations?.[index] || item.text);
+        });
+        setTranslations((current) => ({ ...current, ...next }));
+      })
+      .catch(() => {
+        // Keep original text if automatic translation is temporarily unavailable.
+      })
+      .finally(() => {
+        if (!cancelled) setTranslatingGroupKey('');
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedGroup, selectedGroupIsOwner, liveLanguage, translations]);
+
+  function translatedWishValue(wish, field) {
+    if (liveLanguage === 'en') return wish[field];
+    return translations[`${liveLanguage}:${wish.id}:${field}`] || wish[field];
+  }
 
   async function handleUpvote(voteId, event) {
     if (!voteId || pendingUpvotes[voteId]) return;
@@ -487,10 +662,43 @@ function LivePage() {
 
   return (
     <Shell>
+      <div className="languagePickerWrap">
+        <button
+          className={`languagePickerButton ${languageOpen ? 'open' : ''}`}
+          type="button"
+          onClick={() => setLanguageOpen((current) => !current)}
+          aria-expanded={languageOpen}
+          aria-haspopup="menu"
+        >
+          <span>{copy.language}</span>
+          <small>{liveLanguage.toUpperCase()}</small>
+        </button>
+
+        {languageOpen ? (
+          <div className="languageMenu" role="menu">
+            {LIVE_LANGUAGES.map((language) => (
+              <button
+                key={language.code}
+                className={language.code === liveLanguage ? 'active' : ''}
+                type="button"
+                role="menuitem"
+                onClick={() => {
+                  setLiveLanguage(language.code);
+                  setLanguageOpen(false);
+                }}
+              >
+                <span>{language.label}</span>
+                {language.code === liveLanguage ? <i aria-hidden="true">•</i> : null}
+              </button>
+            ))}
+          </div>
+        ) : null}
+      </div>
+
       <section className="minimalWishlist">
-        <h1 className="wishlistTitle">WISHLIST</h1>
+        <h1 className="wishlistTitle">{copy.wishlist}</h1>
         <p className="wishlistCountdown">
-          {countdown.ended ? 'WISHLIST CLOSED' : `CLOSES IN ${countdown.label}`}
+          {countdown.ended ? copy.closed : `${copy.closesIn} ${countdown.label}`}
         </p>
 
         <div className="envelopeGrid" aria-label="Wishlist submissions">
@@ -554,22 +762,22 @@ function LivePage() {
             </button>
 
             <div className="wishAuthor">
-              <span>{selectedGroupIsOwner ? 'ABOUT THE WISHLIST' : 'WISHES FROM'}</span>
+              <span>{selectedGroupIsOwner ? copy.aboutWishlist : copy.wishesFrom}</span>
               <strong>{selectedGroup.username === 'Anonymous' ? 'Anonymous' : '@' + selectedGroup.username.replace(/^@+/, '')}</strong>
             </div>
 
             {selectedGroupIsOwner ? (
               <div className="ownerNotice">
-                <p>Share proposals and support the ideas you like by upvoting them.</p>
-                <p>We will consider each idea, including the ones with 0 upvotes, so don't worry.</p>
+                <p>{copy.ownerLine1}</p>
+                <p>{copy.ownerLine2}</p>
               </div>
             ) : (
               <div className="wishList">
                 {selectedGroup.wishes.map((wish, index) => (
                   <article className="wishItem" key={wish.id}>
                     <span>{String(index + 1).padStart(2, '0')}</span>
-                    <h2>{wish.character}</h2>
-                    {wish.setting ? <p>{wish.setting}</p> : null}
+                    <h2>{translatedWishValue(wish, 'character')}</h2>
+                    {wish.setting ? <p>{translatedWishValue(wish, 'setting')}</p> : null}
                     <div className="wishItemActions">
                       <button
                         className={`wishVoteButton ${wish.viewerUpvoted ? 'voted' : ''}`}
@@ -582,7 +790,7 @@ function LivePage() {
                           : `Upvote ${wish.character}`}
                       >
                         <span aria-hidden="true">{wish.viewerUpvoted ? '✓' : '↑'}</span>
-                        <span>{wish.viewerUpvoted ? 'UPVOTED' : 'UPVOTE'}</span>
+                        <span>{wish.viewerUpvoted ? copy.upvoted : copy.upvote}</span>
                         <strong>{wish.upvotes || 0}</strong>
                       </button>
                     </div>
@@ -590,6 +798,9 @@ function LivePage() {
                 ))}
               </div>
             )}
+            {!selectedGroupIsOwner && translatingGroupKey === selectedGroup.key ? (
+              <span className="translationStatus" aria-live="polite">•••</span>
+            ) : null}
           </section>
         </div>
       ) : null}
