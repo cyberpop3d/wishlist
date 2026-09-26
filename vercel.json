@@ -2,7 +2,8 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "alias": [
     "live.kiarostudio.com",
-    "live.yontuk.com"
+    "live.yontuk.com",
+    "vote.yontuk.com"
   ],
   "rewrites": [
     {
