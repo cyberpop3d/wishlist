@@ -1479,3 +1479,114 @@ h1 {
     animation-duration: .01ms;
   }
 }
+
+
+/* Cyberpop owner notice */
+.ownerEnvelopeEntry .envelopeButton {
+  color: #b9dcff;
+  background:
+    radial-gradient(circle at 50% 48%, rgba(87,166,255,.16), rgba(87,166,255,.04) 52%, transparent 76%);
+  box-shadow:
+    0 0 20px rgba(72,154,255,.18),
+    inset 0 0 18px rgba(72,154,255,.05);
+}
+
+.ownerEnvelopeEntry .envelopeButton::before {
+  content: "";
+  position: absolute;
+  inset: 10px 4px 4px;
+  border-radius: 24px;
+  background: radial-gradient(circle, rgba(72,154,255,.22), rgba(72,154,255,.07) 45%, transparent 72%);
+  filter: blur(8px);
+  opacity: .7;
+  pointer-events: none;
+  animation: ownerEnvelopeGlow 3.2s ease-in-out infinite;
+}
+
+.ownerEnvelopeEntry .envelopeIcon {
+  position: relative;
+  z-index: 1;
+  filter:
+    drop-shadow(0 0 5px rgba(106,183,255,.72))
+    drop-shadow(0 0 14px rgba(72,154,255,.34));
+}
+
+.ownerEnvelopeEntry .envelopeUsername {
+  color: #86bfff;
+  font-weight: 850;
+  text-shadow:
+    0 0 7px rgba(72,154,255,.5),
+    0 0 16px rgba(72,154,255,.22);
+}
+
+.ownerEnvelopeEntry:hover .envelopeButton {
+  background:
+    radial-gradient(circle at 50% 48%, rgba(87,166,255,.23), rgba(87,166,255,.07) 52%, transparent 76%);
+  box-shadow:
+    0 0 26px rgba(72,154,255,.28),
+    inset 0 0 20px rgba(72,154,255,.08);
+}
+
+.ownerEnvelopeEntry:hover .envelopeUsername {
+  color: #b9dcff;
+}
+
+.ownerWishLetter {
+  border-color: rgba(92,170,255,.38);
+  background:
+    radial-gradient(circle at 20% 0%, rgba(65,145,255,.12), transparent 36%),
+    #0b0d10;
+  box-shadow:
+    0 30px 100px rgba(0,0,0,.62),
+    0 0 34px rgba(68,151,255,.2),
+    inset 0 0 28px rgba(68,151,255,.045);
+}
+
+.ownerWishLetter .wishAuthor span {
+  color: #78b7ff;
+}
+
+.ownerWishLetter .wishAuthor strong {
+  color: #c8e3ff;
+  text-shadow:
+    0 0 10px rgba(88,170,255,.38),
+    0 0 24px rgba(88,170,255,.15);
+}
+
+.ownerNotice {
+  margin-top: 34px;
+  padding-top: 24px;
+  border-top: 1px solid rgba(113,184,255,.22);
+  display: grid;
+  gap: 16px;
+}
+
+.ownerNotice p {
+  margin: 0;
+  color: #d9e7f5;
+  font-size: clamp(18px, 3vw, 24px);
+  line-height: 1.45;
+  letter-spacing: -.015em;
+}
+
+.ownerNotice p + p {
+  color: #a9c7e5;
+  font-size: clamp(15px, 2.4vw, 19px);
+}
+
+@keyframes ownerEnvelopeGlow {
+  0%, 100% {
+    opacity: .52;
+    transform: scale(.94);
+  }
+  50% {
+    opacity: .88;
+    transform: scale(1.04);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ownerEnvelopeEntry .envelopeButton::before {
+    animation: none;
+  }
+}
