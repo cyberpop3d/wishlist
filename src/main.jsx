@@ -261,10 +261,13 @@ function wishlistEntryFromVote(vote) {
 
   if (!character || !setting) return null;
 
+  const username = String(vote.username || '').trim();
+
   return {
     id: vote.id,
     character,
     setting,
+    username,
     createdAt,
   };
 }
@@ -282,9 +285,25 @@ function formatSubmittedTime(value) {
   }
 }
 
+function EnvelopeIcon() {
+  return (
+    <svg
+      className="envelopeIcon"
+      viewBox="0 0 120 88"
+      aria-hidden="true"
+      focusable="false"
+    >
+      <rect x="4" y="4" width="112" height="80" rx="10" />
+      <path d="M10 14L60 51L110 14" />
+      <path d="M10 76L45 44" />
+      <path d="M110 76L75 44" />
+    </svg>
+  );
+}
+
 function LivePage() {
   const [entries, setEntries] = useState([]);
-  const [status, setStatus] = useState('loading');
+  const [selectedUserKey, setSelectedUserKey] = useState('');
 
   async function loadWishlist() {
     try {
@@ -297,9 +316,8 @@ function LivePage() {
         .sort((a, b) => b.createdAt - a.createdAt);
 
       setEntries(nextEntries);
-      setStatus('ready');
     } catch {
-      setStatus('error');
+      // Keep the page visually clean if the live feed is temporarily unavailable.
     }
   }
 
@@ -309,73 +327,97 @@ function LivePage() {
     return () => window.clearInterval(timer);
   }, []);
 
-  const uniqueCharacters = useMemo(
-    () => new Set(entries.map((entry) => entry.character.toLowerCase())).size,
-    [entries],
-  );
+  const userGroups = useMemo(() => {
+    const grouped = new Map();
+
+    entries.forEach((entry) => {
+      const username = entry.username || 'Anonymous';
+      const key = entry.username
+        ? entry.username.toLowerCase()
+        : 'anonymous-' + String(entry.id);
+
+      if (!grouped.has(key)) {
+        grouped.set(key, {
+          key,
+          username,
+          wishes: [],
+        });
+      }
+
+      grouped.get(key).wishes.push(entry);
+    });
+
+    return Array.from(grouped.values());
+  }, [entries]);
+
+  const selectedGroup = userGroups.find((group) => group.key === selectedUserKey) || null;
+
+  useEffect(() => {
+    if (!selectedGroup) return undefined;
+
+    const onKeyDown = (event) => {
+      if (event.key === 'Escape') setSelectedUserKey('');
+    };
+
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [selectedGroup]);
 
   return (
     <Shell>
-      <BrandBar mode="live" />
+      <section className="minimalWishlist">
+        <h1 className="wishlistTitle">WISHLIST</h1>
 
-      <section className="campaignHero liveHero">
-        <div className="heroCopy">
-          <h1>Propose your idea. It can be any theme, any character that you want to see in our design style.</h1>
-        </div>
-        <Countdown />
-      </section>
-
-      <section className="liveStats">
-        <div>
-          <span>Wishlist ideas</span>
-          <strong>{entries.length}</strong>
-        </div>
-        <div>
-          <span>Unique characters</span>
-          <strong>{uniqueCharacters}</strong>
-        </div>
-        <a href={voteUrl}>Submit yours →</a>
-      </section>
-
-      {status === 'error' ? (
-        <div className="formNotice error liveError">
-          <strong>Live feed is temporarily unavailable.</strong>
-          <span>Please refresh the page shortly.</span>
-        </div>
-      ) : null}
-
-      <section className="wishlistFeed" aria-live="polite">
-        <div className="feedHeader">
-          <div>
-            <span>Community wishlist</span>
-            <h2>Latest ideas</h2>
-          </div>
-          <p>{status === 'loading' ? 'Loading…' : 'Newest submissions appear first.'}</p>
-        </div>
-
-        {status !== 'loading' && entries.length === 0 ? (
-          <div className="emptyState">
-            <strong>No ideas yet.</strong>
-            <span>Be the first to add a character and setting.</span>
-            <a href={voteUrl}>Add the first wishlist idea</a>
-          </div>
-        ) : null}
-
-        <div className="wishGrid">
-          {entries.map((entry, index) => (
-            <article className="wishCard" key={entry.id}>
-              <div className="wishIndex">{String(entries.length - index).padStart(2, '0')}</div>
-              <div className="wishMain">
-                <span>Character</span>
-                <h3>{entry.character}</h3>
-                <span>Setting</span>
-                <p>{entry.setting}</p>
-              </div>
-              <time>{formatSubmittedTime(entry.createdAt)}</time>
-            </article>
+        <div className="envelopeGrid" aria-label="Wishlist submissions">
+          {userGroups.map((group) => (
+            <button
+              className="envelopeButton"
+              type="button"
+              key={group.key}
+              onClick={() => setSelectedUserKey(group.key)}
+              aria-label={'Open wishes from ' + group.username}
+            >
+              <EnvelopeIcon />
+            </button>
           ))}
         </div>
       </section>
+
+      {selectedGroup ? (
+        <div
+          className="wishOverlay"
+          role="presentation"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) setSelectedUserKey('');
+          }}
+        >
+          <section className="wishLetter" role="dialog" aria-modal="true" aria-label="Wishlist details">
+            <button
+              className="wishClose"
+              type="button"
+              aria-label="Close wishlist"
+              onClick={() => setSelectedUserKey('')}
+            >
+              ×
+            </button>
+
+            <div className="wishAuthor">
+              <span>WISHES FROM</span>
+              <strong>{selectedGroup.username === 'Anonymous' ? 'Anonymous' : '@' + selectedGroup.username.replace(/^@/, '')}</strong>
+            </div>
+
+            <div className="wishList">
+              {selectedGroup.wishes.map((wish, index) => (
+                <article className="wishItem" key={wish.id}>
+                  <span>{String(index + 1).padStart(2, '0')}</span>
+                  <h2>{wish.character}</h2>
+                  <p>{wish.setting}</p>
+                </article>
+              ))}
+            </div>
+          </section>
+        </div>
+      ) : null}
     </Shell>
   );
 }
