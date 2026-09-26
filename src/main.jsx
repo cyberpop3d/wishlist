@@ -670,8 +670,8 @@ function LivePage() {
           aria-expanded={languageOpen}
           aria-haspopup="menu"
         >
-          <span>{copy.language}</span>
-          <small>{liveLanguage.toUpperCase()}</small>
+          <span>LANGUAGE</span>
+          <i className="languageChevron" aria-hidden="true">⌄</i>
         </button>
 
         {languageOpen ? (
