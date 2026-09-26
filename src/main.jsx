@@ -110,7 +110,7 @@ function VotePage() {
   const canSaveUsername = usernameDraft.trim().replace(/^@+/, '').length >= 2;
   const canSubmitWishes = countdown.active
     && cleanUsername.length >= 2
-    && wishes.every((wish) => wish.trim().length >= 2)
+    && wishes.some((wish) => wish.trim().length >= 2)
     && !submitting;
 
   function saveUsername(event) {
@@ -147,12 +147,14 @@ function VotePage() {
     setSubmitting(true);
     setError('');
 
-    const rows = wishes.map((wish, index) => ({
-      selected_ids: [`${CAMPAIGN_PREFIX}portal-${index + 1}`],
-      selected_titles: [wish.trim()],
-      note: '',
-      username: cleanUsername,
-    }));
+    const rows = wishes
+      .map((wish, index) => ({
+        selected_ids: [`${CAMPAIGN_PREFIX}portal-${index + 1}`],
+        selected_titles: [wish.trim()],
+        note: '',
+        username: cleanUsername,
+      }))
+      .filter((row) => row.selected_titles[0].length >= 2);
 
     const { error: insertError } = await supabase.from('wishlist_votes').insert(rows);
 
