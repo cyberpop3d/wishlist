@@ -108,8 +108,19 @@ function VotePage() {
     let cancelled = false;
     let objectUrl = '';
 
+    function writeU32(bytes, offset, value) {
+      bytes[offset] = (value >>> 24) & 255;
+      bytes[offset + 1] = (value >>> 16) & 255;
+      bytes[offset + 2] = (value >>> 8) & 255;
+      bytes[offset + 3] = value & 255;
+    }
+
     async function loadWishPortalVideo() {
       try {
+        // The original upload was split into text chunks for GitHub/Vercel.
+        // One later chunk is damaged, but the first 71 frames are intact.
+        // Build a clean ~8.9s loop from the intact portion and patch the MP4
+        // sample tables so browsers can play it normally.
         const chunkNames = [
           'chunk-00.txt',
           'chunk-01.txt',
@@ -119,8 +130,6 @@ function VotePage() {
           'chunk-05.txt',
           'chunk-06.txt',
           'chunk-07.txt',
-          'chunk-07a.txt',
-          'chunk-08.txt',
         ];
 
         const parts = await Promise.all(
@@ -131,15 +140,48 @@ function VotePage() {
           }),
         );
 
-        const base64 = parts.join('');
-        const binary = window.atob(base64);
-        const bytes = new Uint8Array(binary.length);
+        const joined = parts.join('');
+
+        // 123,708 base64 characters decode to 92,781 intact bytes.
+        // Keep exactly the first 92,779 bytes: MP4 header + frames 0–70.
+        const safeBase64 = joined.slice(0, 123708);
+        const binary = window.atob(safeBase64);
+        const decoded = new Uint8Array(binary.length);
         for (let index = 0; index < binary.length; index += 1) {
-          bytes[index] = binary.charCodeAt(index);
+          decoded[index] = binary.charCodeAt(index);
         }
 
+        const SAFE_FILE_SIZE = 92779;
+        const SAFE_SAMPLE_COUNT = 71;
+        const SAFE_MOVIE_DURATION = 8875;
+        const SAFE_MEDIA_DURATION = 145408;
+        const SAFE_CTTS_ENTRY_COUNT = 35;
+        const MDAT_OFFSET = 1688;
+
+        const bytes = decoded.slice(0, SAFE_FILE_SIZE);
+
+        // mvhd duration
+        writeU32(bytes, 64, SAFE_MOVIE_DURATION);
+        // tkhd duration
+        writeU32(bytes, 184, SAFE_MOVIE_DURATION);
+        // elst segment_duration
+        writeU32(bytes, 272, SAFE_MOVIE_DURATION);
+        // mdhd duration
+        writeU32(bytes, 316, SAFE_MEDIA_DURATION);
+        // stts sample_count
+        writeU32(bytes, 656, SAFE_SAMPLE_COUNT);
+        // ctts entry_count: entries 0–34 sum to 71 samples exactly
+        writeU32(bytes, 696, SAFE_CTTS_ENTRY_COUNT);
+        // stsz sample_count
+        writeU32(bytes, 1096, SAFE_SAMPLE_COUNT);
+        // mdat box size after truncating the damaged tail
+        writeU32(bytes, MDAT_OFFSET, SAFE_FILE_SIZE - MDAT_OFFSET);
+
         objectUrl = URL.createObjectURL(new Blob([bytes], { type: 'video/mp4' }));
-        if (!cancelled) setVideoUrl(objectUrl);
+        if (!cancelled) {
+          setVideoUrl(objectUrl);
+          setError('');
+        }
       } catch {
         if (!cancelled) setError('Wish Portal video could not be loaded.');
       }
