@@ -360,7 +360,7 @@ function LivePage() {
   const [entries, setEntries] = useState([]);
   const [selectedUserKey, setSelectedUserKey] = useState('');
   const [pendingUpvotes, setPendingUpvotes] = useState({});
-  const [sparkleVotes, setSparkleVotes] = useState({});
+  const [magicFx, setMagicFx] = useState(null);
 
   async function loadWishlist() {
     try {
@@ -413,8 +413,12 @@ function LivePage() {
 
   const selectedGroup = userGroups.find((group) => group.key === selectedUserKey) || null;
 
-  async function handleUpvote(voteId) {
+  async function handleUpvote(voteId, event) {
     if (!voteId || pendingUpvotes[voteId]) return;
+
+    const buttonRect = event?.currentTarget?.getBoundingClientRect?.();
+    const clickX = event?.clientX || (buttonRect ? buttonRect.left + buttonRect.width / 2 : window.innerWidth / 2);
+    const clickY = event?.clientY || (buttonRect ? buttonRect.top + buttonRect.height / 2 : window.innerHeight / 2);
 
     setPendingUpvotes((current) => ({ ...current, [voteId]: true }));
 
@@ -442,10 +446,11 @@ function LivePage() {
       )));
 
       if (data.upvoted) {
-        setSparkleVotes((current) => ({ ...current, [voteId]: true }));
+        const fxKey = `${voteId}-${Date.now()}`;
+        setMagicFx({ x: clickX, y: clickY, key: fxKey });
         window.setTimeout(() => {
-          setSparkleVotes((current) => ({ ...current, [voteId]: false }));
-        }, 850);
+          setMagicFx((current) => current?.key === fxKey ? null : current);
+        }, 720);
       }
     } catch {
       // Leave the current count unchanged if the request fails.
@@ -538,9 +543,9 @@ function LivePage() {
                   {wish.setting ? <p>{wish.setting}</p> : null}
                   <div className="wishItemActions">
                     <button
-                      className={`wishVoteButton ${wish.viewerUpvoted ? 'voted' : ''} ${sparkleVotes[wish.id] ? 'sparkled' : ''}`}
+                      className={`wishVoteButton ${wish.viewerUpvoted ? 'voted' : ''}`}
                       type="button"
-                      onClick={() => handleUpvote(wish.id)}
+                      onClick={(event) => handleUpvote(wish.id, event)}
                       disabled={!!pendingUpvotes[wish.id]}
                       aria-pressed={wish.viewerUpvoted}
                       aria-label={wish.viewerUpvoted
@@ -551,19 +556,28 @@ function LivePage() {
                       <span>{wish.viewerUpvoted ? 'UPVOTED' : 'UPVOTE'}</span>
                       <strong>{wish.upvotes || 0}</strong>
                     </button>
-                    {sparkleVotes[wish.id] ? (
-                      <span className="sparkleBurst" aria-hidden="true">
-                        {Array.from({ length: 9 }).map((_, sparkleIndex) => (
-                          <i key={sparkleIndex}>✦</i>
-                        ))}
-                      </span>
-                    ) : null}
                   </div>
                 </article>
               ))}
             </div>
           </section>
         </div>
+      ) : null}
+
+      {magicFx ? (
+        <span
+          key={magicFx.key}
+          className="magicClickFx"
+          style={{ left: magicFx.x, top: magicFx.y }}
+          aria-hidden="true"
+        >
+          <i className="magicSpark magicSpark1">✦</i>
+          <i className="magicSpark magicSpark2">✧</i>
+          <i className="magicSpark magicSpark3">•</i>
+          <i className="magicSpark magicSpark4">✦</i>
+          <i className="magicSpark magicSpark5">•</i>
+          <i className="magicSpark magicSpark6">✧</i>
+        </span>
       ) : null}
     </Shell>
   );
