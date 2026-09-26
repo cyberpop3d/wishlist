@@ -110,7 +110,7 @@ function normalizeConfig(value = {}) {
   };
 }
 
-function normalizeVoteRecord(row, upvotes = 0) {
+function normalizeVoteRecord(row, upvotes = 0, viewerUpvoted = false) {
   return {
     id: row.id,
     created_at: row.created_at,
@@ -119,6 +119,7 @@ function normalizeVoteRecord(row, upvotes = 0) {
     selected_titles: Array.isArray(row.selected_titles) ? row.selected_titles : [],
     note: typeof row.note === 'string' ? row.note.trim() : '',
     upvotes: Number(upvotes || 0),
+    viewerUpvoted: Boolean(viewerUpvoted),
   };
 }
 
@@ -151,6 +152,26 @@ function buildUpvoteCounts(rows) {
   return counts;
 }
 
+async function fetchViewerUpvoteRows(voterToken) {
+  if (!voterToken || voterToken.length < 8 || voterToken.length > 128) return [];
+
+  try {
+    return await supabaseRest(
+      `wishlist_vote_upvotes?voter_token=eq.${encodeURIComponent(voterToken)}&select=wishlist_vote_id`
+    );
+  } catch {
+    return [];
+  }
+}
+
+function buildViewerUpvoteSet(rows) {
+  return new Set(
+    (Array.isArray(rows) ? rows : [])
+      .map((row) => String(row?.wishlist_vote_id || ''))
+      .filter(Boolean)
+  );
+}
+
 export default async function handler(req, res) {
   setCors(res);
 
@@ -160,16 +181,24 @@ export default async function handler(req, res) {
 
   try {
     if (req.method === 'GET') {
-      const [settingsRows, voteRows, archiveRows, upvoteRows] = await Promise.all([
+      const viewerToken = String(req.query?.voterToken || '').trim();
+
+      const [settingsRows, voteRows, archiveRows, upvoteRows, viewerUpvoteRows] = await Promise.all([
         supabaseRest(`portfolio_settings?key=eq.${encodeURIComponent(SETTINGS_KEY)}&select=value`),
         supabaseRest('wishlist_vote_counts?select=option_id,votes'),
         fetchVoteArchive(),
         fetchUpvoteRows(),
+        fetchViewerUpvoteRows(viewerToken),
       ]);
 
       const upvoteCounts = buildUpvoteCounts(upvoteRows);
+      const viewerUpvotes = buildViewerUpvoteSet(viewerUpvoteRows);
       const voteArchive = Array.isArray(archiveRows)
-        ? archiveRows.map((row) => normalizeVoteRecord(row, upvoteCounts.get(String(row.id)) || 0))
+        ? archiveRows.map((row) => normalizeVoteRecord(
+            row,
+            upvoteCounts.get(String(row.id)) || 0,
+            viewerUpvotes.has(String(row.id))
+          ))
         : [];
       const writtenNotes = voteArchive.filter((vote) => vote.note);
       const config = normalizeConfig(settingsRows?.[0]?.value);
