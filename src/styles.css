@@ -1365,3 +1365,90 @@ h1 {
     right: 2px;
   }
 }
+
+
+/* Magical upvote feedback */
+.wishItemActions {
+  position: relative;
+  display: inline-block;
+  overflow: visible;
+}
+
+.wishVoteButton.sparkled {
+  animation: upvoteGlowPulse .72s cubic-bezier(.2,.8,.2,1);
+}
+
+.sparkleBurst {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 1px;
+  height: 1px;
+  z-index: 6;
+  pointer-events: none;
+}
+
+.sparkleBurst i {
+  --x: 0px;
+  --y: -34px;
+  --delay: 0ms;
+  position: absolute;
+  left: 0;
+  top: 0;
+  color: #fff;
+  font-style: normal;
+  font-size: 10px;
+  line-height: 1;
+  opacity: 0;
+  filter: drop-shadow(0 0 5px rgba(255,255,255,.9));
+  animation: sparklePop .72s cubic-bezier(.15,.75,.2,1) var(--delay) forwards;
+}
+
+.sparkleBurst i:nth-child(1) { --x: -48px; --y: -18px; --delay: 0ms; font-size: 8px; }
+.sparkleBurst i:nth-child(2) { --x: -30px; --y: -38px; --delay: 35ms; font-size: 12px; }
+.sparkleBurst i:nth-child(3) { --x: -4px;  --y: -46px; --delay: 12ms; font-size: 9px; }
+.sparkleBurst i:nth-child(4) { --x: 30px;  --y: -36px; --delay: 48ms; font-size: 11px; }
+.sparkleBurst i:nth-child(5) { --x: 50px;  --y: -12px; --delay: 18ms; font-size: 8px; }
+.sparkleBurst i:nth-child(6) { --x: 42px;  --y: 22px;  --delay: 62ms; font-size: 10px; }
+.sparkleBurst i:nth-child(7) { --x: 10px;  --y: 34px;  --delay: 28ms; font-size: 8px; }
+.sparkleBurst i:nth-child(8) { --x: -30px; --y: 28px;  --delay: 54ms; font-size: 11px; }
+.sparkleBurst i:nth-child(9) { --x: -52px; --y: 10px;  --delay: 22ms; font-size: 7px; }
+
+@keyframes sparklePop {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) translate(0, 0) scale(.15) rotate(0deg);
+  }
+  24% {
+    opacity: 1;
+  }
+  72% {
+    opacity: .9;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) translate(var(--x), var(--y)) scale(1.25) rotate(70deg);
+  }
+}
+
+@keyframes upvoteGlowPulse {
+  0% {
+    box-shadow: 0 0 0 rgba(255,255,255,0);
+  }
+  34% {
+    transform: translateY(-1px) scale(1.035);
+    box-shadow:
+      0 0 18px rgba(255,255,255,.34),
+      0 0 36px rgba(255,255,255,.12);
+  }
+  100% {
+    box-shadow: 0 0 0 rgba(255,255,255,0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wishVoteButton.sparkled,
+  .sparkleBurst i {
+    animation-duration: .01ms;
+  }
+}
