@@ -130,6 +130,14 @@ h1 {
   line-height: 1.55;
 }
 
+.liveHero .heroCopy h1 {
+  margin: 0;
+  max-width: 760px;
+  font-size: clamp(30px, 4vw, 48px);
+  line-height: 1.04;
+  letter-spacing: -.04em;
+}
+
 .countdown {
   min-height: 360px;
   border-radius: 34px;
@@ -570,6 +578,10 @@ h1 {
 
   .heroCopy { padding: 24px; }
   h1 { font-size: 54px; }
+  .liveHero .heroCopy h1 {
+    font-size: 30px;
+    line-height: 1.08;
+  }
   .heroCopy p { font-size: 17px; }
 
   .countdown { padding: 24px; }
