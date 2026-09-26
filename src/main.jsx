@@ -306,6 +306,7 @@ function wishlistEntryFromVote(vote) {
     setting,
     username,
     upvotes: Number(vote.upvotes || 0),
+    viewerUpvoted: Boolean(vote.viewerUpvoted),
     createdAt,
   };
 }
@@ -362,7 +363,11 @@ function LivePage() {
 
   async function loadWishlist() {
     try {
-      const response = await fetch('/api/live-dashboard', { cache: 'no-store' });
+      const voterToken = getOrCreateWishlistVoterToken();
+      const response = await fetch(
+        `/api/live-dashboard?voterToken=${encodeURIComponent(voterToken)}`,
+        { cache: 'no-store' }
+      );
       if (!response.ok) throw new Error('Live wishlist fetch failed');
       const data = await response.json();
       const nextEntries = (data.voteArchive || [])
@@ -427,7 +432,11 @@ function LivePage() {
 
       setEntries((current) => current.map((entry) => (
         entry.id === voteId
-          ? { ...entry, upvotes: Number(data.upvotes || 0) }
+          ? {
+              ...entry,
+              upvotes: Number(data.upvotes || 0),
+              viewerUpvoted: Boolean(data.upvoted),
+            }
           : entry
       )));
     } catch {
@@ -502,14 +511,17 @@ function LivePage() {
                   {wish.setting ? <p>{wish.setting}</p> : null}
                   <div className="wishItemActions">
                     <button
-                      className="wishVoteButton"
+                      className={`wishVoteButton ${wish.viewerUpvoted ? 'voted' : ''}`}
                       type="button"
                       onClick={() => handleUpvote(wish.id)}
                       disabled={!!pendingUpvotes[wish.id]}
-                      aria-label={`Upvote ${wish.character}`}
+                      aria-pressed={wish.viewerUpvoted}
+                      aria-label={wish.viewerUpvoted
+                        ? `Remove upvote from ${wish.character}`
+                        : `Upvote ${wish.character}`}
                     >
-                      <span aria-hidden="true">↑</span>
-                      <span>UPVOTE</span>
+                      <span aria-hidden="true">{wish.viewerUpvoted ? '✓' : '↑'}</span>
+                      <span>{wish.viewerUpvoted ? 'UPVOTED' : 'UPVOTE'}</span>
                       <strong>{wish.upvotes || 0}</strong>
                     </button>
                   </div>
