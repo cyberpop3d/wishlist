@@ -1140,3 +1140,92 @@ h1 {
     padding-top: 56px;
   }
 }
+
+
+/* One-week wishlist countdown + idea upvotes */
+.wishlistTitle {
+  margin-bottom: 12px;
+}
+
+.wishlistCountdown {
+  margin: 0 0 clamp(44px, 6vh, 68px);
+  color: #777;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: .2em;
+  line-height: 1.3;
+  text-align: center;
+  text-transform: uppercase;
+  font-variant-numeric: tabular-nums;
+}
+
+.wishItemActions {
+  margin-top: 16px;
+}
+
+.wishVoteButton {
+  min-height: 42px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid rgba(255,255,255,.15);
+  border-radius: 999px;
+  padding: 0 14px;
+  background: rgba(255,255,255,.04);
+  color: #f7f7f5;
+  cursor: pointer;
+  transition: transform .16s ease, background .16s ease, border-color .16s ease, opacity .16s ease;
+}
+
+.wishVoteButton:hover:not(:disabled) {
+  transform: translateY(-1px);
+  border-color: rgba(255,255,255,.28);
+  background: rgba(255,255,255,.08);
+}
+
+.wishVoteButton:disabled {
+  opacity: .55;
+  cursor: wait;
+}
+
+.wishVoteButton > span {
+  color: #d6d6d2;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: .12em;
+}
+
+.wishVoteButton > span:first-child {
+  color: #fff;
+  font-size: 17px;
+  line-height: 1;
+}
+
+.wishVoteButton > strong {
+  min-width: 22px;
+  height: 22px;
+  display: inline-grid;
+  place-items: center;
+  border-radius: 999px;
+  background: rgba(255,255,255,.09);
+  color: #fff;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 620px) {
+  .wishlistTitle {
+    margin-bottom: 10px;
+  }
+
+  .wishlistCountdown {
+    margin-bottom: 38px;
+    font-size: 10px;
+    letter-spacing: .16em;
+  }
+
+  .wishVoteButton {
+    min-height: 40px;
+    padding-inline: 12px;
+  }
+}
