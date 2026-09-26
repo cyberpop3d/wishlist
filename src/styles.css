@@ -1249,3 +1249,114 @@ h1 {
     padding-inline: 12px;
   }
 }
+
+
+/* Envelope metadata */
+.envelopeEntry {
+  width: 128px;
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+}
+
+.envelopeButton {
+  position: relative;
+  transition:
+    transform .2s cubic-bezier(.2,.8,.2,1),
+    background .2s ease;
+}
+
+.envelopeIcon {
+  transition:
+    transform .2s cubic-bezier(.2,.8,.2,1),
+    opacity .2s ease;
+}
+
+.envelopeEntry:hover .envelopeButton {
+  transform: translateY(-3px) scale(1.025);
+  background: rgba(255,255,255,.04);
+}
+
+.envelopeEntry:hover .envelopeIcon {
+  transform: translateY(-1px);
+}
+
+.envelopeVoteCount {
+  position: absolute;
+  top: 4px;
+  right: 3px;
+  z-index: 2;
+  min-width: 29px;
+  height: 22px;
+  padding: 0 7px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  border: 1px solid rgba(255,255,255,.14);
+  border-radius: 999px;
+  background: rgba(5,5,5,.88);
+  color: #a9a9a5;
+  box-shadow: 0 4px 16px rgba(0,0,0,.28);
+  font-size: 9px;
+  font-weight: 850;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  pointer-events: none;
+  transition:
+    color .2s ease,
+    border-color .2s ease,
+    background .2s ease;
+}
+
+.envelopeVoteCount > span {
+  font-size: 10px;
+  line-height: 1;
+}
+
+.envelopeVoteCount > strong {
+  font-size: 9px;
+  font-weight: 900;
+}
+
+.envelopeEntry:hover .envelopeVoteCount {
+  color: #f7f7f5;
+  border-color: rgba(255,255,255,.24);
+  background: rgba(12,12,12,.96);
+}
+
+.envelopeUsername {
+  display: block;
+  width: 128px;
+  margin-top: -5px;
+  overflow: hidden;
+  color: #71716d;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .025em;
+  line-height: 1.2;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  transition: color .2s ease;
+}
+
+.envelopeEntry:hover .envelopeUsername {
+  color: #aaa9a4;
+}
+
+@media (max-width: 620px) {
+  .envelopeEntry {
+    width: 112px;
+  }
+
+  .envelopeUsername {
+    width: 112px;
+    font-size: 9px;
+  }
+
+  .envelopeVoteCount {
+    top: 3px;
+    right: 2px;
+  }
+}
