@@ -53,40 +53,27 @@ export default async function handler(req, res) {
       return sendJson(res, 400, { ok: false, error: 'Invalid voter token.' });
     }
 
-    const insertResponse = await supabaseRequest('wishlist_vote_upvotes', {
+    const toggleResponse = await supabaseRequest('rpc/toggle_wishlist_upvote', {
       method: 'POST',
-      headers: {
-        Prefer: 'return=minimal',
-      },
-      body: JSON.stringify([{
-        wishlist_vote_id: voteId,
-        voter_token: voterToken,
-      }]),
+      body: JSON.stringify({
+        p_vote_id: voteId,
+        p_voter_token: voterToken,
+      }),
     });
 
-    if (!insertResponse.ok) {
-      const errorBody = await insertResponse.json().catch(() => ({}));
-      if (String(errorBody?.code || '') !== '23505') {
-        throw new Error(errorBody?.message || 'Could not save upvote.');
-      }
+    if (!toggleResponse.ok) {
+      const errorBody = await toggleResponse.json().catch(() => ({}));
+      throw new Error(errorBody?.message || 'Could not update upvote.');
     }
 
-    const countResponse = await supabaseRequest(
-      `wishlist_vote_upvotes?wishlist_vote_id=eq.${encodeURIComponent(voteId)}&select=id`
-    );
-
-    if (!countResponse.ok) {
-      const errorBody = await countResponse.json().catch(() => ({}));
-      throw new Error(errorBody?.message || 'Could not load upvote count.');
-    }
-
-    const rows = await countResponse.json();
+    const rows = await toggleResponse.json();
+    const result = Array.isArray(rows) ? rows[0] : null;
 
     return sendJson(res, 200, {
       ok: true,
       voteId,
-      upvotes: Array.isArray(rows) ? rows.length : 0,
-      alreadyVoted: !insertResponse.ok,
+      upvoted: Boolean(result?.upvoted),
+      upvotes: Number(result?.upvotes || 0),
     });
   } catch (error) {
     return sendJson(res, 500, {
