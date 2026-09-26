@@ -110,7 +110,7 @@ function normalizeConfig(value = {}) {
   };
 }
 
-function normalizeVoteRecord(row) {
+function normalizeVoteRecord(row, upvotes = 0) {
   return {
     id: row.id,
     created_at: row.created_at,
@@ -118,6 +118,7 @@ function normalizeVoteRecord(row) {
     selected_ids: Array.isArray(row.selected_ids) ? row.selected_ids : [],
     selected_titles: Array.isArray(row.selected_titles) ? row.selected_titles : [],
     note: typeof row.note === 'string' ? row.note.trim() : '',
+    upvotes: Number(upvotes || 0),
   };
 }
 
@@ -132,6 +133,24 @@ async function fetchVoteArchive() {
   }
 }
 
+async function fetchUpvoteRows() {
+  try {
+    return await supabaseRest('wishlist_vote_upvotes?select=wishlist_vote_id');
+  } catch {
+    return [];
+  }
+}
+
+function buildUpvoteCounts(rows) {
+  const counts = new Map();
+  (Array.isArray(rows) ? rows : []).forEach((row) => {
+    const voteId = String(row?.wishlist_vote_id || '');
+    if (!voteId) return;
+    counts.set(voteId, (counts.get(voteId) || 0) + 1);
+  });
+  return counts;
+}
+
 export default async function handler(req, res) {
   setCors(res);
 
@@ -141,13 +160,17 @@ export default async function handler(req, res) {
 
   try {
     if (req.method === 'GET') {
-      const [settingsRows, voteRows, archiveRows] = await Promise.all([
+      const [settingsRows, voteRows, archiveRows, upvoteRows] = await Promise.all([
         supabaseRest(`portfolio_settings?key=eq.${encodeURIComponent(SETTINGS_KEY)}&select=value`),
         supabaseRest('wishlist_vote_counts?select=option_id,votes'),
         fetchVoteArchive(),
+        fetchUpvoteRows(),
       ]);
 
-      const voteArchive = Array.isArray(archiveRows) ? archiveRows.map(normalizeVoteRecord) : [];
+      const upvoteCounts = buildUpvoteCounts(upvoteRows);
+      const voteArchive = Array.isArray(archiveRows)
+        ? archiveRows.map((row) => normalizeVoteRecord(row, upvoteCounts.get(String(row.id)) || 0))
+        : [];
       const writtenNotes = voteArchive.filter((vote) => vote.note);
       const config = normalizeConfig(settingsRows?.[0]?.value);
 
