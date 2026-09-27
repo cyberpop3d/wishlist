@@ -14,6 +14,7 @@ const CAMPAIGN_END = new Date('2026-10-03T19:43:00Z');
 const CAMPAIGN_PREFIX = 'wishlist-24h-2026-09-26:';
 const OWNER_USERNAME = 'cyberpop3d';
 const UPVOTE_SNAPSHOT_KEY = 'yontuk-wishlist-upvote-snapshot-v1';
+const RECENT_UPVOTE_WINDOW_MS = 30 * 60 * 1000;
 
 const LIVE_LANGUAGES = [
   { code: 'en', label: 'English' },
@@ -442,6 +443,8 @@ function wishlistEntryFromVote(vote) {
 
   const username = String(vote.username || '').trim();
 
+  const lastUpvoteAt = vote.last_upvote_at ? new Date(vote.last_upvote_at) : null;
+
   return {
     id: vote.id,
     character,
@@ -450,6 +453,7 @@ function wishlistEntryFromVote(vote) {
     upvotes: Number(vote.upvotes || 0),
     viewerUpvoted: Boolean(vote.viewerUpvoted),
     createdAt,
+    lastUpvoteAt: lastUpvoteAt && !Number.isNaN(lastUpvoteAt.getTime()) ? lastUpvoteAt : null,
   };
 }
 
@@ -687,10 +691,17 @@ function LivePage() {
 
       currentSnapshot[group.key] = totalUpvotes;
 
+      const hasBaseline = Object.prototype.hasOwnProperty.call(upvoteBaseline, group.key);
+      const increasedSinceLastVisit = hasBaseline
+        && totalUpvotes > Number(upvoteBaseline[group.key] || 0);
+      const hasRecentActivity = !hasBaseline && group.wishes.some((wish) => (
+        wish.lastUpvoteAt
+        && Date.now() - wish.lastUpvoteAt.getTime() <= RECENT_UPVOTE_WINDOW_MS
+      ));
+
       if (
         group.key !== OWNER_USERNAME
-        && Object.prototype.hasOwnProperty.call(upvoteBaseline, group.key)
-        && totalUpvotes > Number(upvoteBaseline[group.key] || 0)
+        && (increasedSinceLastVisit || hasRecentActivity)
       ) {
         changedKeys.push(group.key);
       }
