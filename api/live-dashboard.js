@@ -110,7 +110,7 @@ function normalizeConfig(value = {}) {
   };
 }
 
-function normalizeVoteRecord(row, upvotes = 0, viewerUpvoted = false) {
+function normalizeVoteRecord(row, upvotes = 0, viewerUpvoted = false, lastUpvoteAt = null) {
   return {
     id: row.id,
     created_at: row.created_at,
@@ -120,6 +120,7 @@ function normalizeVoteRecord(row, upvotes = 0, viewerUpvoted = false) {
     note: typeof row.note === 'string' ? row.note.trim() : '',
     upvotes: Number(upvotes || 0),
     viewerUpvoted: Boolean(viewerUpvoted),
+    last_upvote_at: lastUpvoteAt,
   };
 }
 
@@ -136,20 +137,30 @@ async function fetchVoteArchive() {
 
 async function fetchUpvoteRows() {
   try {
-    return await supabaseRest('wishlist_vote_upvotes?select=wishlist_vote_id');
+    return await supabaseRest('wishlist_vote_upvotes?select=wishlist_vote_id,created_at');
   } catch {
     return [];
   }
 }
 
-function buildUpvoteCounts(rows) {
+function buildUpvoteStats(rows) {
   const counts = new Map();
+  const latest = new Map();
+
   (Array.isArray(rows) ? rows : []).forEach((row) => {
     const voteId = String(row?.wishlist_vote_id || '');
     if (!voteId) return;
+
     counts.set(voteId, (counts.get(voteId) || 0) + 1);
+
+    const createdAt = row?.created_at ? new Date(row.created_at) : null;
+    if (createdAt && !Number.isNaN(createdAt.getTime())) {
+      const previous = latest.get(voteId);
+      if (!previous || createdAt > previous) latest.set(voteId, createdAt);
+    }
   });
-  return counts;
+
+  return { counts, latest };
 }
 
 async function fetchViewerUpvoteRows(voterToken) {
@@ -191,13 +202,14 @@ export default async function handler(req, res) {
         fetchViewerUpvoteRows(viewerToken),
       ]);
 
-      const upvoteCounts = buildUpvoteCounts(upvoteRows);
+      const upvoteStats = buildUpvoteStats(upvoteRows);
       const viewerUpvotes = buildViewerUpvoteSet(viewerUpvoteRows);
       const voteArchive = Array.isArray(archiveRows)
         ? archiveRows.map((row) => normalizeVoteRecord(
             row,
-            upvoteCounts.get(String(row.id)) || 0,
-            viewerUpvotes.has(String(row.id))
+            upvoteStats.counts.get(String(row.id)) || 0,
+            viewerUpvotes.has(String(row.id)),
+            upvoteStats.latest.get(String(row.id))?.toISOString() || null
           ))
         : [];
       const writtenNotes = voteArchive.filter((vote) => vote.note);
