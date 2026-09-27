@@ -13,6 +13,7 @@ const CAMPAIGN_START = new Date('2026-09-26T19:43:00Z');
 const CAMPAIGN_END = new Date('2026-10-03T19:43:00Z');
 const CAMPAIGN_PREFIX = 'wishlist-24h-2026-09-26:';
 const OWNER_USERNAME = 'cyberpop3d';
+const UPVOTE_SNAPSHOT_KEY = 'yontuk-wishlist-upvote-snapshot-v1';
 
 const LIVE_LANGUAGES = [
   { code: 'en', label: 'English' },
@@ -128,6 +129,16 @@ function getStoredLiveLanguage() {
     return LIVE_LANGUAGES.some((language) => language.code === stored) ? stored : 'en';
   } catch {
     return 'en';
+  }
+}
+
+function getStoredUpvoteSnapshot() {
+  try {
+    const raw = window.localStorage.getItem(UPVOTE_SNAPSHOT_KEY);
+    const parsed = raw ? JSON.parse(raw) : {};
+    return parsed && typeof parsed === 'object' ? parsed : {};
+  } catch {
+    return {};
   }
 }
 
@@ -608,6 +619,9 @@ function LivePage() {
   const [languageOpen, setLanguageOpen] = useState(false);
   const [translations, setTranslations] = useState({});
   const [translatingGroupKey, setTranslatingGroupKey] = useState('');
+  const [upvoteBaseline] = useState(getStoredUpvoteSnapshot);
+  const [upvoteSnapshotProcessed, setUpvoteSnapshotProcessed] = useState(false);
+  const [newUpvoteKeys, setNewUpvoteKeys] = useState([]);
   const copy = LIVE_COPY[liveLanguage] || LIVE_COPY.en;
 
   async function loadWishlist() {
@@ -658,6 +672,42 @@ function LivePage() {
 
     return Array.from(grouped.values());
   }, [entries]);
+
+  useEffect(() => {
+    if (upvoteSnapshotProcessed || !userGroups.length) return;
+
+    const currentSnapshot = {};
+    const changedKeys = [];
+
+    userGroups.forEach((group) => {
+      const totalUpvotes = group.wishes.reduce(
+        (sum, wish) => sum + Number(wish.upvotes || 0),
+        0
+      );
+
+      currentSnapshot[group.key] = totalUpvotes;
+
+      if (
+        group.key !== OWNER_USERNAME
+        && Object.prototype.hasOwnProperty.call(upvoteBaseline, group.key)
+        && totalUpvotes > Number(upvoteBaseline[group.key] || 0)
+      ) {
+        changedKeys.push(group.key);
+      }
+    });
+
+    setNewUpvoteKeys(changedKeys);
+    setUpvoteSnapshotProcessed(true);
+
+    try {
+      window.localStorage.setItem(
+        UPVOTE_SNAPSHOT_KEY,
+        JSON.stringify(currentSnapshot)
+      );
+    } catch {
+      // New-upvote highlighting simply resets if storage is unavailable.
+    }
+  }, [userGroups, upvoteBaseline, upvoteSnapshotProcessed]);
 
   const resultGroups = useMemo(() => {
     const grouped = new Map();
@@ -886,13 +936,20 @@ function LivePage() {
               ? 'Anonymous'
               : '@' + group.username.replace(/^@+/, '');
             const isOwnerGroup = group.key === OWNER_USERNAME;
+            const hasNewUpvotes = newUpvoteKeys.includes(group.key);
 
             return (
-              <div className={`envelopeEntry ${isOwnerGroup ? 'ownerEnvelopeEntry' : ''}`} key={group.key}>
+              <div
+                className={`envelopeEntry ${isOwnerGroup ? 'ownerEnvelopeEntry' : ''} ${hasNewUpvotes ? 'newUpvoteEntry' : ''}`}
+                key={group.key}
+              >
                 <button
                   className={`envelopeButton ${isOwnerGroup ? 'ownerEnvelopeButton' : ''}`}
                   type="button"
-                  onClick={() => setSelectedUserKey(group.key)}
+                  onClick={() => {
+                    setSelectedUserKey(group.key);
+                    setNewUpvoteKeys((current) => current.filter((key) => key !== group.key));
+                  }}
                   aria-label={'Open wishes from ' + group.username}
                 >
                   {!isOwnerGroup ? (
