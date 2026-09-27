@@ -584,32 +584,6 @@ function resultCharacterFromWish(value) {
 
 function EnvelopeIcon() {
   return (
-    <svg')}\\b`, 'i'));
-    if (markerIndex > 0 && markerIndex < cutAt) cutAt = markerIndex;
-  });
-
-  if (cutAt < label.length) {
-    label = label
-      .slice(0, cutAt)
-      .replace(/\b(?:in|with|as|the|a|an)\s*$/i, '')
-      .trim();
-  }
-
-  label = label.replace(/[,:;]+$/g, '').trim() || original;
-
-  const key = label
-    .normalize('NFKD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .toLowerCase()
-    .replace(/&/g, ' and ')
-    .replace(/[^a-z0-9]+/g, ' ')
-    .trim();
-
-  return { key: key || slugify(label), label };
-}
-
-function EnvelopeIcon() {
-  return (
     <svg
       className="envelopeIcon"
       viewBox="0 0 120 88"
