@@ -549,7 +549,40 @@ function resultCharacterFromWish(value) {
   let cutAt = label.length;
 
   RESULT_STYLE_MARKERS.forEach((marker) => {
-    const markerIndex = lower.search(new RegExp(`\\b${marker.replace(/[.*+?^${\}()|[\]\\]/g, '\\function EnvelopeIcon() {
+    const markerIndex = lower.indexOf(marker);
+    if (markerIndex <= 0 || markerIndex >= cutAt) return;
+
+    const before = lower[markerIndex - 1] || '';
+    const after = lower[markerIndex + marker.length] || '';
+    const hasLeftBoundary = !/[a-z0-9]/i.test(before);
+    const hasRightBoundary = !after || !/[a-z0-9]/i.test(after);
+
+    if (hasLeftBoundary && hasRightBoundary) {
+      cutAt = markerIndex;
+    }
+  });
+
+  if (cutAt < label.length) {
+    label = label
+      .slice(0, cutAt)
+      .replace(/\b(?:in|with|as|the|a|an)\s*$/i, '')
+      .trim();
+  }
+
+  label = label.replace(/[,:;]+$/g, '').trim() || original;
+
+  const key = label
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/&/g, ' and ')
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim();
+
+  return { key: key || slugify(label), label };
+}
+
+function EnvelopeIcon() {
   return (
     <svg')}\\b`, 'i'));
     if (markerIndex > 0 && markerIndex < cutAt) cutAt = markerIndex;
