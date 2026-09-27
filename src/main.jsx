@@ -29,72 +29,96 @@ const LIVE_COPY = {
     closed: 'WISHLIST CLOSED',
     closesIn: 'CLOSES IN',
     wishesFrom: 'WISHES FROM',
-    aboutWishlist: 'ABOUT THE WISHLIST',
+    aboutWishlist: 'A NOTE FROM CYBERPOP',
     upvote: 'UPVOTE',
     upvoted: 'UPVOTED',
     language: 'LANGUAGE',
-    ownerLine1: 'Share proposals and support the ideas you like by upvoting them.',
-    ownerLine2: "We will consider each idea, including the ones with 0 upvotes, so don't worry.",
+    results: 'RESULTS',
+    resultsHint: 'Combined by character across style variations',
+    proposals: 'PROPOSALS',
+    ownerLine1: 'Tell us what you actually want to see next. Upvotes help us spot shared interest, but they are not the only factor.',
+    ownerLine2: 'We’ll review every single idea — even those with 0 votes.',
+    ownerFootnote: 'Curated personally by Cyberpop',
   },
   pt: {
     wishlist: 'LISTA DE DESEJOS',
     closed: 'LISTA ENCERRADA',
     closesIn: 'TERMINA EM',
     wishesFrom: 'IDEIAS DE',
-    aboutWishlist: 'SOBRE A LISTA',
+    aboutWishlist: 'UMA NOTA DA CYBERPOP',
     upvote: 'VOTAR',
     upvoted: 'VOTADO',
     language: 'IDIOMA',
-    ownerLine1: 'Compartilhe propostas e apoie as ideias que você gosta votando nelas.',
-    ownerLine2: 'Vamos considerar todas as ideias, inclusive as que tiverem 0 votos, então não se preocupe.',
+    results: 'RESULTADOS',
+    resultsHint: 'Agrupados por personagem entre diferentes estilos',
+    proposals: 'PROPOSTAS',
+    ownerLine1: 'Conte o que você realmente quer ver a seguir. Os votos nos ajudam a identificar interesses em comum, mas não são o único fator.',
+    ownerLine2: 'Vamos analisar cada ideia — até mesmo as que tiverem 0 votos.',
+    ownerFootnote: 'Curadoria pessoal da Cyberpop',
   },
   es: {
     wishlist: 'LISTA DE DESEOS',
     closed: 'LISTA CERRADA',
     closesIn: 'CIERRA EN',
     wishesFrom: 'IDEAS DE',
-    aboutWishlist: 'SOBRE LA LISTA',
+    aboutWishlist: 'UNA NOTA DE CYBERPOP',
     upvote: 'VOTAR',
     upvoted: 'VOTADO',
     language: 'IDIOMA',
-    ownerLine1: 'Comparte propuestas y apoya las ideas que te gusten votándolas.',
-    ownerLine2: 'Tendremos en cuenta todas las ideas, incluidas las que tengan 0 votos, así que no te preocupes.',
+    results: 'RESULTADOS',
+    resultsHint: 'Agrupados por personaje entre distintas variaciones de estilo',
+    proposals: 'PROPUESTAS',
+    ownerLine1: 'Cuéntanos qué quieres ver realmente después. Los votos nos ayudan a detectar intereses compartidos, pero no son el único factor.',
+    ownerLine2: 'Revisaremos cada idea — incluso las que tengan 0 votos.',
+    ownerFootnote: 'Selección personal de Cyberpop',
   },
   fr: {
     wishlist: 'LISTE DE SOUHAITS',
     closed: 'LISTE FERMÉE',
     closesIn: 'SE TERMINE DANS',
     wishesFrom: 'IDÉES DE',
-    aboutWishlist: 'À PROPOS DE LA LISTE',
+    aboutWishlist: 'UN MOT DE CYBERPOP',
     upvote: 'VOTER',
     upvoted: 'VOTÉ',
     language: 'LANGUE',
-    ownerLine1: 'Partagez vos propositions et soutenez les idées que vous aimez en votant pour elles.',
-    ownerLine2: 'Nous examinerons chaque idée, y compris celles avec 0 vote, alors ne vous inquiétez pas.',
+    results: 'RÉSULTATS',
+    resultsHint: 'Regroupés par personnage, toutes variations de style confondues',
+    proposals: 'PROPOSITIONS',
+    ownerLine1: 'Dites-nous ce que vous voulez vraiment voir ensuite. Les votes nous aident à repérer les intérêts communs, mais ce n’est pas le seul facteur.',
+    ownerLine2: 'Nous examinerons chaque idée — même celles avec 0 vote.',
+    ownerFootnote: 'Sélection personnelle de Cyberpop',
   },
   de: {
     wishlist: 'WUNSCHLISTE',
     closed: 'WUNSCHLISTE GESCHLOSSEN',
     closesIn: 'ENDET IN',
     wishesFrom: 'IDEEN VON',
-    aboutWishlist: 'ÜBER DIE WUNSCHLISTE',
+    aboutWishlist: 'EINE NOTIZ VON CYBERPOP',
     upvote: 'UPVOTE',
     upvoted: 'GEVOTET',
     language: 'SPRACHE',
-    ownerLine1: 'Teile Vorschläge und unterstütze Ideen, die dir gefallen, mit einem Upvote.',
-    ownerLine2: 'Wir berücksichtigen jede Idee, auch solche mit 0 Upvotes, also keine Sorge.',
+    results: 'ERGEBNISSE',
+    resultsHint: 'Nach Charakter über verschiedene Stilvarianten zusammengefasst',
+    proposals: 'VORSCHLÄGE',
+    ownerLine1: 'Sag uns, was du als Nächstes wirklich sehen möchtest. Upvotes zeigen uns gemeinsames Interesse, sind aber nicht der einzige Faktor.',
+    ownerLine2: 'Wir prüfen jede einzelne Idee — auch die mit 0 Upvotes.',
+    ownerFootnote: 'Persönlich von Cyberpop kuratiert',
   },
   it: {
     wishlist: 'LISTA DEI DESIDERI',
     closed: 'LISTA CHIUSA',
     closesIn: 'CHIUDE TRA',
     wishesFrom: 'IDEE DI',
-    aboutWishlist: 'SULLA LISTA',
+    aboutWishlist: 'UNA NOTA DA CYBERPOP',
     upvote: 'VOTA',
     upvoted: 'VOTATO',
     language: 'LINGUA',
-    ownerLine1: 'Condividi le tue proposte e sostieni le idee che ti piacciono votandole.',
-    ownerLine2: 'Prenderemo in considerazione ogni idea, comprese quelle con 0 voti, quindi non preoccuparti.',
+    results: 'RISULTATI',
+    resultsHint: 'Raggruppati per personaggio tra diverse varianti di stile',
+    proposals: 'PROPOSTE',
+    ownerLine1: 'Dicci cosa vuoi davvero vedere dopo. I voti ci aiutano a capire gli interessi condivisi, ma non sono l’unico fattore.',
+    ownerLine2: 'Esamineremo ogni singola idea — anche quelle con 0 voti.',
+    ownerFootnote: 'Selezionato personalmente da Cyberpop',
   },
 };
 
@@ -446,6 +470,111 @@ function getOrCreateWishlistVoterToken() {
   }
 }
 
+const RESULT_STYLE_MARKERS = [
+  'casual',
+  'sugar',
+  'candy',
+  'urban',
+  'mob boss',
+  'wild west',
+  'western',
+  'creepy',
+  'horror',
+  'halloween',
+  'beach',
+  'summer',
+  'winter',
+  'christmas',
+  'xmas',
+  'samurai',
+  'ninja',
+  'pirate',
+  'cowboy',
+  'streetwear',
+  'street style',
+  'hip hop',
+  'hip-hop',
+  'rapper',
+  'gangster',
+  'mafia',
+  'noir',
+  'punk',
+  'cyberpunk',
+  'steampunk',
+  'fantasy',
+  'medieval',
+  'victorian',
+  'apocalyptic',
+  'apocalypse',
+  'zombie',
+  'vampire',
+  'mecha',
+  'robot',
+  'armored',
+  'armoured',
+  'armor',
+  'armour',
+  'classic',
+  'retro',
+  'futuristic',
+  'future',
+  'modern',
+  'formal',
+  'wedding',
+  'sports',
+  'battle damaged',
+  'battle-damaged',
+  'damaged',
+  'cute',
+  'chibi',
+  'gore',
+  'gory',
+];
+
+function resultCharacterFromWish(value) {
+  const original = String(value || '').trim();
+  if (!original) return { key: '', label: '' };
+
+  let label = original
+    .replace(/[()[\]{}]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  const separatorMatch = label.match(/\s(?:[-–—|/])\s/);
+  if (separatorMatch?.index > 0) {
+    label = label.slice(0, separatorMatch.index).trim();
+  }
+
+  const lower = label.toLowerCase();
+  let cutAt = label.length;
+
+  RESULT_STYLE_MARKERS.forEach((marker) => {
+    const markerIndex = lower.search(new RegExp(`\\b${marker.replace(/[.*+?^${\}()|[\]\\]/g, '\\function EnvelopeIcon() {
+  return (
+    <svg')}\\b`, 'i'));
+    if (markerIndex > 0 && markerIndex < cutAt) cutAt = markerIndex;
+  });
+
+  if (cutAt < label.length) {
+    label = label
+      .slice(0, cutAt)
+      .replace(/\b(?:in|with|as|the|a|an)\s*$/i, '')
+      .trim();
+  }
+
+  label = label.replace(/[,:;]+$/g, '').trim() || original;
+
+  const key = label
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/&/g, ' and ')
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim();
+
+  return { key: key || slugify(label), label };
+}
+
 function EnvelopeIcon() {
   return (
     <svg
@@ -521,6 +650,45 @@ function LivePage() {
     });
 
     return Array.from(grouped.values());
+  }, [entries]);
+
+  const resultGroups = useMemo(() => {
+    const grouped = new Map();
+
+    entries.forEach((entry) => {
+      const normalizedUsername = String(entry.username || '').replace(/^@+/, '').toLowerCase();
+      if (normalizedUsername === OWNER_USERNAME) return;
+
+      const character = resultCharacterFromWish(entry.character);
+      if (!character.key) return;
+
+      if (!grouped.has(character.key)) {
+        grouped.set(character.key, {
+          key: character.key,
+          label: character.label,
+          totalUpvotes: 0,
+          proposals: 0,
+          latestAt: entry.createdAt,
+        });
+      }
+
+      const result = grouped.get(character.key);
+      result.totalUpvotes += Number(entry.upvotes || 0);
+      result.proposals += 1;
+      if (entry.createdAt > result.latestAt) result.latestAt = entry.createdAt;
+
+      if (character.label.length < result.label.length) {
+        result.label = character.label;
+      }
+    });
+
+    return Array.from(grouped.values())
+      .sort((a, b) => (
+        b.totalUpvotes - a.totalUpvotes
+        || b.proposals - a.proposals
+        || b.latestAt - a.latestAt
+      ))
+      .slice(0, 12);
   }, [entries]);
 
   const selectedGroup = userGroups.find((group) => group.key === selectedUserKey) || null;
@@ -738,6 +906,31 @@ function LivePage() {
         </div>
       </section>
 
+      {resultGroups.length ? (
+        <section className="resultsSection" aria-labelledby="results-title">
+          <div className="resultsHeading">
+            <div>
+              <span>LIVE</span>
+              <h2 id="results-title">{copy.results}</h2>
+            </div>
+            <p>{copy.resultsHint}</p>
+          </div>
+
+          <div className="resultsList">
+            {resultGroups.map((result, index) => (
+              <article className="resultRow" key={result.key}>
+                <span className="resultRank">{String(index + 1).padStart(2, '0')}</span>
+                <h3>{result.label}</h3>
+                <div className="resultMeta">
+                  <strong><span aria-hidden="true">↑</span>{result.totalUpvotes}</strong>
+                  <small>{result.proposals} {copy.proposals}</small>
+                </div>
+              </article>
+            ))}
+          </div>
+        </section>
+      ) : null}
+
       {selectedGroup ? (
         <div
           className="wishOverlay"
@@ -770,6 +963,7 @@ function LivePage() {
               <div className="ownerNotice">
                 <p>{copy.ownerLine1}</p>
                 <p>{copy.ownerLine2}</p>
+                <small>{copy.ownerFootnote}</small>
               </div>
             ) : (
               <div className="wishList">
