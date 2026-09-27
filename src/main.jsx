@@ -14,6 +14,7 @@ const CAMPAIGN_END = new Date('2026-10-03T19:43:00Z');
 const CAMPAIGN_PREFIX = 'wishlist-24h-2026-09-26:';
 const OWNER_USERNAME = 'cyberpop3d';
 const UPVOTE_SNAPSHOT_KEY = 'yontuk-wishlist-upvote-snapshot-v1';
+const UPVOTE_ACTIVITY_SEEN_KEY = 'yontuk-wishlist-upvote-activity-seen-v1';
 const RECENT_UPVOTE_WINDOW_MS = 30 * 60 * 1000;
 
 const LIVE_LANGUAGES = [
@@ -136,6 +137,16 @@ function getStoredLiveLanguage() {
 function getStoredUpvoteSnapshot() {
   try {
     const raw = window.localStorage.getItem(UPVOTE_SNAPSHOT_KEY);
+    const parsed = raw ? JSON.parse(raw) : {};
+    return parsed && typeof parsed === 'object' ? parsed : {};
+  } catch {
+    return {};
+  }
+}
+
+function getStoredUpvoteActivitySeen() {
+  try {
+    const raw = window.localStorage.getItem(UPVOTE_ACTIVITY_SEEN_KEY);
     const parsed = raw ? JSON.parse(raw) : {};
     return parsed && typeof parsed === 'object' ? parsed : {};
   } catch {
@@ -624,6 +635,7 @@ function LivePage() {
   const [translations, setTranslations] = useState({});
   const [translatingGroupKey, setTranslatingGroupKey] = useState('');
   const [upvoteBaseline] = useState(getStoredUpvoteSnapshot);
+  const [activitySeen, setActivitySeen] = useState(getStoredUpvoteActivitySeen);
   const [upvoteSnapshotProcessed, setUpvoteSnapshotProcessed] = useState(false);
   const [newUpvoteKeys, setNewUpvoteKeys] = useState([]);
   const copy = LIVE_COPY[liveLanguage] || LIVE_COPY.en;
@@ -694,14 +706,19 @@ function LivePage() {
       const hasBaseline = Object.prototype.hasOwnProperty.call(upvoteBaseline, group.key);
       const increasedSinceLastVisit = hasBaseline
         && totalUpvotes > Number(upvoteBaseline[group.key] || 0);
-      const hasRecentActivity = !hasBaseline && group.wishes.some((wish) => (
+
+      const latestActivityMs = group.wishes.reduce((latest, wish) => (
         wish.lastUpvoteAt
-        && Date.now() - wish.lastUpvoteAt.getTime() <= RECENT_UPVOTE_WINDOW_MS
-      ));
+          ? Math.max(latest, wish.lastUpvoteAt.getTime())
+          : latest
+      ), 0);
+      const lastSeenActivityMs = Number(activitySeen[group.key] || 0);
+      const hasUnseenRecentActivity = latestActivityMs > lastSeenActivityMs
+        && Date.now() - latestActivityMs <= RECENT_UPVOTE_WINDOW_MS;
 
       if (
         group.key !== OWNER_USERNAME
-        && (increasedSinceLastVisit || hasRecentActivity)
+        && (increasedSinceLastVisit || hasUnseenRecentActivity)
       ) {
         changedKeys.push(group.key);
       }
@@ -718,7 +735,7 @@ function LivePage() {
     } catch {
       // New-upvote highlighting simply resets if storage is unavailable.
     }
-  }, [userGroups, upvoteBaseline, upvoteSnapshotProcessed]);
+  }, [userGroups, upvoteBaseline, activitySeen, upvoteSnapshotProcessed]);
 
   const resultGroups = useMemo(() => {
     const grouped = new Map();
@@ -960,6 +977,27 @@ function LivePage() {
                   onClick={() => {
                     setSelectedUserKey(group.key);
                     setNewUpvoteKeys((current) => current.filter((key) => key !== group.key));
+
+                    const latestActivityMs = group.wishes.reduce((latest, wish) => (
+                      wish.lastUpvoteAt
+                        ? Math.max(latest, wish.lastUpvoteAt.getTime())
+                        : latest
+                    ), 0);
+
+                    if (latestActivityMs) {
+                      setActivitySeen((current) => {
+                        const next = { ...current, [group.key]: latestActivityMs };
+                        try {
+                          window.localStorage.setItem(
+                            UPVOTE_ACTIVITY_SEEN_KEY,
+                            JSON.stringify(next)
+                          );
+                        } catch {
+                          // Dismissal still works for the current visit.
+                        }
+                        return next;
+                      });
+                    }
                   }}
                   aria-label={'Open wishes from ' + group.username}
                 >
