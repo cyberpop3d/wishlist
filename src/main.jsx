@@ -320,6 +320,7 @@ function VotePage() {
   if (step === 'intro') {
     return (
       <main className="voteExperience introExperience">
+        <BrandBar mode="vote" />
         <section className="portalIntro">
           <div className="portalVideoWrap">
             <video
@@ -353,6 +354,7 @@ function VotePage() {
 
   return (
     <main className="voteExperience">
+      <BrandBar mode="vote" />
       <section className="conversationStage">
         {step !== 'username' && username ? (
           <div className="conversationIdentity">
@@ -916,6 +918,7 @@ function LivePage() {
 
   return (
     <Shell>
+      <BrandBar mode="live" />
       <div className="languagePickerWrap">
         <button
           className={`languagePickerButton ${languageOpen ? 'open' : ''}`}
