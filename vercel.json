@@ -5,6 +5,20 @@
     "live.yontuk.com",
     "vote.yontuk.com"
   ],
+  "redirects": [
+    {
+      "source": "/:path*",
+      "has": [{ "type": "host", "value": "live.yontuk.com" }],
+      "destination": "https://live.cyberpopstudio.com/:path*",
+      "permanent": true
+    },
+    {
+      "source": "/:path*",
+      "has": [{ "type": "host", "value": "vote.yontuk.com" }],
+      "destination": "https://vote.cyberpopstudio.com/:path*",
+      "permanent": true
+    }
+  ],
   "rewrites": [
     {
       "source": "/vote",

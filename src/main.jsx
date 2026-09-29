@@ -165,11 +165,12 @@ const SETTING_RECOMMENDATIONS = [
 const params = new URLSearchParams(window.location.search);
 const routePath = window.location.pathname.replace(/\/+$/, '') || '/';
 const host = window.location.hostname.toLowerCase();
-const isVoteHost = host === 'vote.yontuk.com';
+const isVoteHost = host === 'vote.yontuk.com' || host === 'vote.cyberpopstudio.com';
 const isVoteRoute = isVoteHost || routePath === '/vote' || params.get('vote') === '1';
 
-const voteUrl = 'https://vote.yontuk.com/';
-const liveUrl = 'https://live.yontuk.com/';
+const voteUrl = 'https://vote.cyberpopstudio.com/';
+const liveUrl = 'https://live.cyberpopstudio.com/';
+const studioUrl = 'https://cyberpopstudio.com/';
 const WISH_PORTAL_VIDEO_URL = 'https://d2ol7oe51mr4n9.cloudfront.net/user_3JSVhpN3tgfQHwuizlasXKrt8Ey/d9260218-76a7-4f51-a598-ebc092c3ab3f.mp4';
 
 function slugify(value) {
@@ -227,7 +228,7 @@ function Shell({ children }) {
 function BrandBar({ mode }) {
   return (
     <header className="brandBar">
-      <a className="brand" href={liveUrl}>YONTUK</a>
+      <a className="brand" href={studioUrl}>CYBERPOP STUDIO</a>
       <nav>
         <a className={mode === 'live' ? 'active' : ''} href={liveUrl}>Live Wishlist</a>
         <a className={mode === 'vote' ? 'active' : ''} href={voteUrl}>Submit an Idea</a>
@@ -429,7 +430,7 @@ function VotePage() {
           <div className="conversationCard doneCard">
             <h1>Thank You,</h1>
             <p>you can view all other wishes from here</p>
-            <a className="liveWishlistButton" href={liveUrl}>LIVE.YONTUK.COM</a>
+            <a className="liveWishlistButton" href={liveUrl}>LIVE.CYBERPOPSTUDIO.COM</a>
           </div>
         ) : null}
       </section>

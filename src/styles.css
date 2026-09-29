@@ -36,10 +36,38 @@ input, textarea, button { -webkit-tap-highlight-color: transparent; }
 }
 
 .brand {
-  font-size: 18px;
-  font-weight: 950;
-  letter-spacing: .24em;
+  position: relative;
+  font-size: 14px;
+  font-weight: 900;
+  letter-spacing: .16em;
   text-decoration: none;
+  white-space: nowrap;
+  color: #f5f4f1;
+  transition: color .25s ease, text-shadow .25s ease, transform .25s ease;
+}
+
+.brand:hover,
+.brand:focus-visible {
+  color: #fff;
+  text-shadow: 0 0 10px rgba(174,144,255,.72), 0 0 28px rgba(124,92,225,.5);
+  transform: translateY(-1px);
+  outline: none;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .brand::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 100%;
+    bottom: -6px;
+    height: 1px;
+    background: linear-gradient(90deg, #ab91ff, #77deed);
+    box-shadow: 0 0 9px rgba(174,144,255,.7);
+    transition: right .3s ease;
+  }
+  .brand:hover::after,
+  .brand:focus-visible::after { right: 0; }
 }
 
 .brandBar nav {
