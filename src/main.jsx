@@ -296,17 +296,15 @@ function VotePage() {
     setError('');
 
     const voterToken = getOrCreateWishlistVoterToken();
-    const rows = wishes
-      .map((wish, index) => ({
-        selected_ids: [`${CAMPAIGN_PREFIX}portal-${index + 1}`],
-        selected_titles: [wish.trim()],
-        note: '',
-        username: cleanUsername,
-        voter_token: voterToken,
-      }))
-      .filter((row) => row.selected_titles[0].length >= 2);
+    const titles = wishes
+      .map((wish) => wish.trim())
+      .filter((title) => title.length >= 2);
 
-    const { error: insertError } = await supabase.from('wishlist_votes').insert(rows);
+    const { error: insertError } = await supabase.rpc('submit_wishlist_wishes', {
+      p_username: cleanUsername,
+      p_titles: titles,
+      p_voter_token: voterToken,
+    });
 
     if (insertError) {
       setError(insertError.message || 'Could not save your wishes.');
