@@ -295,12 +295,14 @@ function VotePage() {
     setSubmitting(true);
     setError('');
 
+    const voterToken = getOrCreateWishlistVoterToken();
     const rows = wishes
       .map((wish, index) => ({
         selected_ids: [`${CAMPAIGN_PREFIX}portal-${index + 1}`],
         selected_titles: [wish.trim()],
         note: '',
         username: cleanUsername,
+        voter_token: voterToken,
       }))
       .filter((row) => row.selected_titles[0].length >= 2);
 
