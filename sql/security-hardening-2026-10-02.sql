@@ -88,3 +88,8 @@ revoke insert, update, delete, select on table public.wishlist_vote_upvotes from
 drop policy if exists "Allow public insert portfolio settings" on public.portfolio_settings;
 drop policy if exists "Allow public update portfolio settings" on public.portfolio_settings;
 revoke insert, update, delete on table public.portfolio_settings from anon;
+
+-- Public site uses the anon role; signed-in users do not need these RPCs.
+revoke execute on function public.submit_wishlist_wishes(text,text[],text) from authenticated;
+revoke execute on function public.toggle_wishlist_upvote(uuid,text) from authenticated;
+revoke execute on function public.get_wishlist_upvote_summary(text) from authenticated;
