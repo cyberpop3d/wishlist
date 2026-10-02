@@ -135,9 +135,15 @@ async function fetchVoteArchive() {
   }
 }
 
-async function fetchUpvoteRows() {
+async function fetchUpvoteSummary(voterToken) {
+  const token = typeof voterToken === 'string' && /^[0-9a-f-]{36}$/i.test(voterToken)
+    ? voterToken
+    : null;
   try {
-    return await supabaseRest('wishlist_vote_upvotes?select=wishlist_vote_id,created_at');
+    return await supabaseRest('rpc/get_wishlist_upvote_summary', {
+      method: 'POST',
+      body: JSON.stringify({ p_voter_token: token }),
+    });
   } catch {
     return [];
   }
@@ -151,33 +157,19 @@ function buildUpvoteStats(rows) {
     const voteId = String(row?.wishlist_vote_id || '');
     if (!voteId) return;
 
-    counts.set(voteId, (counts.get(voteId) || 0) + 1);
+    counts.set(voteId, Number(row?.upvotes || 0));
 
-    const createdAt = row?.created_at ? new Date(row.created_at) : null;
-    if (createdAt && !Number.isNaN(createdAt.getTime())) {
-      const previous = latest.get(voteId);
-      if (!previous || createdAt > previous) latest.set(voteId, createdAt);
-    }
+    const createdAt = row?.latest_upvote_at ? new Date(row.latest_upvote_at) : null;
+    if (createdAt && !Number.isNaN(createdAt.getTime())) latest.set(voteId, createdAt);
   });
 
   return { counts, latest };
 }
 
-async function fetchViewerUpvoteRows(voterToken) {
-  if (!voterToken || voterToken.length < 8 || voterToken.length > 128) return [];
-
-  try {
-    return await supabaseRest(
-      `wishlist_vote_upvotes?voter_token=eq.${encodeURIComponent(voterToken)}&select=wishlist_vote_id`
-    );
-  } catch {
-    return [];
-  }
-}
-
 function buildViewerUpvoteSet(rows) {
   return new Set(
     (Array.isArray(rows) ? rows : [])
+      .filter((row) => Boolean(row?.viewer_upvoted))
       .map((row) => String(row?.wishlist_vote_id || ''))
       .filter(Boolean)
   );
@@ -194,16 +186,15 @@ export default async function handler(req, res) {
     if (req.method === 'GET') {
       const viewerToken = String(req.query?.voterToken || '').trim();
 
-      const [settingsRows, voteRows, archiveRows, upvoteRows, viewerUpvoteRows] = await Promise.all([
+      const [settingsRows, voteRows, archiveRows, upvoteRows] = await Promise.all([
         supabaseRest(`portfolio_settings?key=eq.${encodeURIComponent(SETTINGS_KEY)}&select=value`),
         supabaseRest('wishlist_vote_counts?select=option_id,votes'),
         fetchVoteArchive(),
-        fetchUpvoteRows(),
-        fetchViewerUpvoteRows(viewerToken),
+        fetchUpvoteSummary(viewerToken),
       ]);
 
       const upvoteStats = buildUpvoteStats(upvoteRows);
-      const viewerUpvotes = buildViewerUpvoteSet(viewerUpvoteRows);
+      const viewerUpvotes = buildViewerUpvoteSet(upvoteRows);
       const voteArchive = Array.isArray(archiveRows)
         ? archiveRows.map((row) => normalizeVoteRecord(
             row,
@@ -226,16 +217,10 @@ export default async function handler(req, res) {
     }
 
     if (req.method === 'POST') {
-      const config = normalizeConfig(req.body?.config || req.body || {});
-      await supabaseRest('portfolio_settings?on_conflict=key', {
-        method: 'POST',
-        headers: {
-          Prefer: 'resolution=merge-duplicates,return=representation',
-        },
-        body: JSON.stringify([{ key: SETTINGS_KEY, value: config }]),
+      return sendJson(res, 403, {
+        ok: false,
+        error: 'Dashboard settings are read-only from the public application.',
       });
-
-      return sendJson(res, 200, { ok: true, settingsKey: SETTINGS_KEY, config });
     }
 
     return sendJson(res, 405, { ok: false, error: 'Method not allowed' });
