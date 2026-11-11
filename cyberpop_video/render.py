@@ -27,20 +27,39 @@ def full(u):
     return u
 def gallery(url):
     from bs4 import BeautifulSoup
-    html=req(url).text; sp=BeautifulSoup(html,"html.parser")
+    from urllib.parse import unquote
+    slug=url.rstrip("/").split("/")[-1]
+    variants=[
+        url,
+        "https://www.3dgo.app/models/cults3d/"+slug,
+        "https://3dgo.app/models/cults3d/"+slug,
+        "https://r.jina.ai/https://cults3d.com/en/3d-model/art/"+slug,
+        "https://polyzon.org/model/cults3d/c3d-"+slug,
+    ]
     ret=[]
-    for e in sp.find_all(["img","source","meta"]):
-        for key in ["data-src","data-original","data-zoom","data-image","data-lazy-src","src","content","srcset"]:
-            v=e.get(key,"")
-            if not v:continue
-            if key=="srcset":
-                v=v.split(",")[-1].strip().split(" ")[0]
-            if "illustration-file" in v and not ".mp4" in v.lower():
-                ret.append(full(v.replace("&amp;","&")))
-    # Includes content encoded within scripts and responsive image arrays
-    for v in re.findall(r'https?:(?:\\?/\\?/|//)[^\s"<>]+?(?:\.png|\.jpg|\.jpeg|\.webp)',html,flags=re.I):
-        v=v.replace("\\/","/");ret.append(full(v))
-    # prioritize the first photo in the uploaded gallery, never an mp4 frame
+    for page in variants:
+        try:
+            html=req(page).text
+            soup=BeautifulSoup(html,"html.parser")
+            found=[]
+            for e in soup.find_all(["img","source","meta"]):
+                for key in ["data-src","data-original","data-zoom","data-image","data-lazy-src","src","content","srcset"]:
+                    v=e.get(key,"")
+                    if not v:continue
+                    if key=="srcset":v=v.split(",")[-1].strip().split(" ")[0]
+                    if "illustration-file" in v and ".mp4" not in v.lower():
+                        found.append(v)
+            for v in re.findall(r'https?:(?:\\?/\\?/|//)[^\s"<>]+?(?:\.png|\.jpg|\.jpeg|\.webp)',html,flags=re.I):
+                found.append(v.replace("\\/","/"))
+            for v in re.findall(r'https?://[^\s\)\]\"<>]+?(?:\.png|\.jpg|\.jpeg|\.webp)',html,flags=re.I):
+                found.append(v)
+            for v in re.findall(r'(?i)https?%3A%2F%2F[^\s"<>]+?%(?:2E|2e)(?:png|jpg|jpeg|webp)',html):
+                found.append(unquote(v))
+            found=[full(unquote(x.replace("&amp;","&").replace("\\/","/"))) for x in found if "illustration-file" in x]
+            print("GALLERY_SCAN",page,"html",len(html),"candidates",len(found),found[:2],flush=True)
+            ret+=found
+        except Exception as e:print("GALLERY_SCAN_FAILED",page,str(e)[:120],flush=True)
+        if ret:break
     seen=set();res=[]
     for u in ret:
         u=u.split(" ")[0]
