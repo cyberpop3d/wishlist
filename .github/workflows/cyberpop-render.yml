@@ -1,0 +1,37 @@
+name: CyberPOP temporary video render
+on:
+  push:
+    branches:
+      - cyberpop-video-render-20261111
+    paths:
+      - 'cyberpop_video/**'
+      - '.github/workflows/cyberpop-render.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install tools
+        run: |
+          python -m pip install --quiet requests beautifulsoup4 pillow numpy opencv-python-headless
+          ffmpeg -version | head -2
+      - name: Download original Cults3D illustrations and render all 38 designs
+        run: python cyberpop_video/render.py
+      - name: Upload finished video for download
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: CyberPOP_38_Clock_Showcase
+          path: |
+            build/CyberPOP_38_Clock_Showcase.mp4
+            build/manifest.json
+            build/errors.txt
+          if-no-files-found: warn
+          retention-days: 7
