@@ -6,6 +6,15 @@ import requests
 from PIL import Image, ImageOps, ImageDraw, ImageFont
 import numpy as np
 
+# Bundle a tested ffmpeg executable when the cloud runner image omits ffmpeg.
+import sys
+try:
+    import imageio_ffmpeg
+except ImportError:
+    subprocess.run([sys.executable,"-m","pip","install","--quiet","imageio-ffmpeg"],check=True)
+    import imageio_ffmpeg
+FFMPEG=imageio_ffmpeg.get_ffmpeg_exe()
+print("FFMPEG",FFMPEG,flush=True)
 OUT=Path("build"); OUT.mkdir(exist_ok=True)
 SIZE=1080; FPS=30
 s=requests.Session()
@@ -166,7 +175,7 @@ durations=np.linspace(1.32,0.47,38)
 total=sum(round(x*FPS) for x in durations)+60
 # Raw frames streamed to ffmpeg, no large temporary source MP4
 video=OUT/"CyberPOP_38_silent.mp4"
-cmd=["ffmpeg","-y","-hide_banner","-loglevel","error","-f","rawvideo","-pixel_format","rgb24","-video_size",f"{SIZE}x{SIZE}","-framerate",str(FPS),"-i","pipe:0","-an","-c:v","libx264","-preset","veryfast","-crf","19","-pix_fmt","yuv420p","-movflags","+faststart",str(video)]
+cmd=[FFMPEG,"-y","-hide_banner","-loglevel","error","-f","rawvideo","-pixel_format","rgb24","-video_size",f"{SIZE}x{SIZE}","-framerate",str(FPS),"-i","pipe:0","-an","-c:v","libx264","-preset","veryfast","-crf","19","-pix_fmt","yuv420p","-movflags","+faststart",str(video)]
 p=subprocess.Popen(cmd,stdin=subprocess.PIPE)
 for i,fr in enumerate(frames):
     n=round(durations[i]*FPS);tr=min(5,n//2) if i else 0
@@ -192,5 +201,5 @@ for dur in durations:
 with wave.open(str(OUT/"ticks.wav"),"wb") as wav:
     wav.setnchannels(1);wav.setsampwidth(2);wav.setframerate(sr);wav.writeframes((np.clip(a,-.9,.9)*32767).astype("<i2").tobytes())
 output=OUT/"CyberPOP_38_Clock_Showcase.mp4"
-subprocess.run(["ffmpeg","-y","-hide_banner","-loglevel","error","-i",str(video),"-i",str(OUT/"ticks.wav"),"-c:v","copy","-c:a","aac","-b:a","128k","-shortest","-movflags","+faststart",str(output)],check=True)
+subprocess.run([FFMPEG,"-y","-hide_banner","-loglevel","error","-i",str(video),"-i",str(OUT/"ticks.wav"),"-c:v","copy","-c:a","aac","-b:a","128k","-shortest","-movflags","+faststart",str(output)],check=True)
 print("SUCCESS",output,output.stat().st_size,"duration seconds",total/FPS,flush=True)
