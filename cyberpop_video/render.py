@@ -103,6 +103,21 @@ for month in ("2026-09","2026-10","2026-11"):
     for x in reversed(data[month]):items.append(x)
 items.append({"title":"Broly Multipart No-AMS","url":"https://cults3d.com/en/3d-model/art/broly-multipart-no-ams","imageUrl":""})
 assert len(items)==38,len(items)
+
+# CyberPOP's own live catalog already selects the first STILL after a video.
+# It calls the owner's Cults3D GraphQL catalog and returns original upload URLs.
+try:
+    live=req("https://cyberpopstudio.com/api/cults-public?limit=50").json()
+    if not live.get("ok"):raise Exception("live catalog returned "+str(live)[:400])
+    byslug={urllib.parse.urlparse(x.get("url") or "").path.rstrip("/").split("/")[-1]:x for x in live.get("results",[])}
+    print("LIVE_CATALOG",len(byslug),"items",flush=True)
+    for i,item in enumerate(items):
+        key=urllib.parse.urlparse(item.get("url") or "").path.rstrip("/").split("/")[-1]
+        match=byslug.get(key)
+        if match and match.get("imageUrl") and (not item.get("imageUrl") or item["imageUrl"].lower().endswith(".mp4")):
+            item["imageUrl"]=match["imageUrl"]
+            print("LIVE_IMAGE",i+1,item["title"],item["imageUrl"],flush=True)
+except Exception as e:print("LIVE_CATALOG_ERROR",repr(e),flush=True)
 (OUT/"manifest.json").write_text(json.dumps(items,indent=2))
 results=[None]*len(items);errors=[]
 with ThreadPoolExecutor(max_workers=5) as pool:
